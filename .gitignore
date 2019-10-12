@@ -16,6 +16,11 @@
 *.gch
 *.pch
 
+# Generated Source Code
+*.yy.c
+*.tab.c
+*.tab.h
+
 # Libraries
 *.lib
 *.a
@@ -29,6 +34,7 @@
 *.dylib
 
 # Executables
+bin/
 *.exe
 *.app
 *.i*86
@@ -40,6 +46,7 @@
 *.su
 *.idb
 *.pdb
+*.output
 
 # Kernel Module Compile Results
 *.mod*
