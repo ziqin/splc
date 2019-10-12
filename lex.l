@@ -1,6 +1,7 @@
 %{
 #include <stdbool.h>
 #include <stdlib.h>
+#include "ast.h"
 #include "syntax.tab.h"
 
 int yycolno = 1;
@@ -10,6 +11,7 @@ int yycolno = 1;
     yylloc.last_line = yylineno;    \
     yycolno += yyleng;              \
     yylloc.last_column = yycolno;
+
 %}
 
 %option yylineno
@@ -32,39 +34,39 @@ fake_char   (''|'\\x({digit}|{letter})*')
 known_err   ({fake_dec}|{fake_hex}|{fake_char})
 
 %%
-{INT}           { yylval.int_value = atoi(yytext); return INT; }
-{FLOAT}         { yylval.float_value = atof(yytext); return FLOAT; }
-{CHAR}          { yylval.string_value = yytext; return CHAR; }
-{TYPE}          { yylval.string_value = yytext; return TYPE; }
-struct          { return STRUCT; }
-if              { return IF; }
-else            { return ELSE; }
-while           { return WHILE; }
-return          { return RETURN; }
-{ID}            { yylval.string_value = yytext; return ID; }
-"."             { return DOT; }
-";"             { return SEMI; }
-","             { return COMMA; }
-"="             { return ASSIGN; }
-"<"             { return LT; }
-"<="            { return LE; }
-">"             { return GT; }
-">="            { return GE; }
-"!="            { return NE; }
-"=="            { return EQ; }
-"+"             { return PLUS; }
-"-"             { return MINUS; }
-"*"             { return MUL; }
-"/"             { return DIV; }
-"&&"            { return AND; }
-"||"            { return OR; }
-"!"             { return NOT; }
-"("             { return LP; }
-")"             { return RP; }
-"["             { return LB; }
-"]"             { return RB; }
-"{"             { return LC; }
-"}"             { return RC; }
+{INT}           { yylval = create_int_ast_node(AST_INT, atoi(yytext)); return INT; }
+{FLOAT}         { yylval = create_float_ast_node(AST_FLOAT, atof(yytext)); return FLOAT; }
+{CHAR}          { yylval = create_str_ast_node(AST_CHAR, yytext); return CHAR; }
+{TYPE}          { yylval = create_str_ast_node(AST_CHAR, yytext); return TYPE; }
+struct          { yylval = create_ast_node(AST_STRUCT); return STRUCT; }
+if              { yylval = create_ast_node(AST_IF); return IF; }
+else            { yylval = create_ast_node(AST_ELSE); return ELSE; }
+while           { yylval = create_ast_node(AST_WHILE); return WHILE; }
+return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
+{ID}            { yylval = create_str_ast_node(AST_ID, yytext); return ID; }
+"."             { yylval = create_ast_node(AST_DOT); return DOT; }
+";"             { yylval = create_ast_node(AST_SEMI); return SEMI; }
+","             { yylval = create_ast_node(AST_COMMA); return COMMA; }
+"="             { yylval = create_ast_node(AST_ASSIGN); return ASSIGN; }
+"<"             { yylval = create_ast_node(AST_LT); return LT; }
+"<="            { yylval = create_ast_node(AST_LE); return LE; }
+">"             { yylval = create_ast_node(AST_GT); return GT; }
+">="            { yylval = create_ast_node(AST_GE); return GE; }
+"!="            { yylval = create_ast_node(AST_NE); return NE; }
+"=="            { yylval = create_ast_node(AST_EQ); return EQ; }
+"+"             { yylval = create_ast_node(AST_PLUS); return PLUS; }
+"-"             { yylval = create_ast_node(AST_MINUS); return MINUS; }
+"*"             { yylval = create_ast_node(AST_MUL); return MUL; }
+"/"             { yylval = create_ast_node(AST_DIV); return DIV; }
+"&&"            { yylval = create_ast_node(AST_AND); return AND; }
+"||"            { yylval = create_ast_node(AST_OR); return OR; }
+"!"             { yylval = create_ast_node(AST_NOT); return NOT; }
+"("             { yylval = create_ast_node(AST_LP); return LP; }
+")"             { yylval = create_ast_node(AST_RP); return RP; }
+"["             { yylval = create_ast_node(AST_LB); return LB; }
+"]"             { yylval = create_ast_node(AST_RB); return RB; }
+"{"             { yylval = create_ast_node(AST_LC); return LC; }
+"}"             { yylval = create_ast_node(AST_RC); return RC; }
 
 {whitespace}+   {}
 {newline}       { yycolno = 1; }
