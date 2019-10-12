@@ -2,6 +2,7 @@
 #define AST_H
 
 #include <stdarg.h>
+#include <stdio.h>
 
 typedef enum {
     AST_INT,
@@ -89,6 +90,6 @@ AstNode * create_float_ast_node(AstNodeType, float);
 AstNode * create_str_ast_node(AstNodeType, const char *);
 AstNode * create_array_ast_node(AstNodeType, int, ...);
 void delete_ast_node(AstNode *);
-const char * ast_type_to_name(AstNodeType);
+void fprint_ast_node(FILE * fp, const AstNode * node, int indent);
 
 #endif

@@ -37,7 +37,7 @@ known_err   ({fake_dec}|{fake_hex}|{fake_char})
 {INT}           { yylval = create_int_ast_node(AST_INT, atoi(yytext)); return INT; }
 {FLOAT}         { yylval = create_float_ast_node(AST_FLOAT, atof(yytext)); return FLOAT; }
 {CHAR}          { yylval = create_str_ast_node(AST_CHAR, yytext); return CHAR; }
-{TYPE}          { yylval = create_str_ast_node(AST_CHAR, yytext); return TYPE; }
+{TYPE}          { yylval = create_str_ast_node(AST_TYPE, yytext); return TYPE; }
 struct          { yylval = create_ast_node(AST_STRUCT); return STRUCT; }
 if              { yylval = create_ast_node(AST_IF); return IF; }
 else            { yylval = create_ast_node(AST_ELSE); return ELSE; }
@@ -74,7 +74,3 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 {known_err}     {}
 .               {}
 %%
-
-// TODO:
-// {known_err}     { yylval.string_value = yytext; return LEX_ERR; }
-// .               { yylval.string_value = yytext; return LEX_ERR; }

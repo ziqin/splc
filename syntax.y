@@ -126,12 +126,9 @@ void yyerror(const char * msg) {
 
 int main(int argc, const char ** argv) {
     yydebug = 0;
-    int err = yyparse();
-    if (err) {
-        puts("Failed!");
-    } else {
-        puts("Succeed!");
+    if (yyparse() == 0) {
+        fprint_ast_node(stdout, program, 0);
+        delete_ast_node(program);
     }
-    delete_ast_node(program);
     return 0;
 }
