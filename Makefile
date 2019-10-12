@@ -10,13 +10,17 @@ splc:
 	@mkdir bin
 	touch bin/splc
 	@chmod +x bin/splc
-.lex: lex.l
+
+parser: lex.yy.o syntax.tab.o
+	$(CC) $(CFLAGS) -o parser lex.yy.o syntax.tab.o $(LDFLAGS)
+lex.yy.o: lex.yy.c syntax.tab.h
+	$(CC) $(CFLAGS) -c lex.yy.c
+syntax.tab.o: syntax.tab.c syntax.tab.h
+	$(CC) $(CFLAGS) -c syntax.tab.c
+lex.yy.c: lex.l
 	$(LEX) lex.l
-.syntax: syntax.y
+syntax.tab.c syntax.tab.h: syntax.y
 	$(YACC) $(YAKFLAGS) syntax.y
-parser: .lex .syntax
-	@mkdir -p bin
-	$(CC) $(CFLAGS) syntax.tab.c $(LDFLAGS) -o bin/parser
 clean:
-	@rm -rf bin/ *.yy.c *.tab.c *.tab.h
+	@rm -rf bin/ *.yy.c *.tab.c *.tab.h *.output *.o
 .PHONY: splc
