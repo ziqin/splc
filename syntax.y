@@ -1,22 +1,25 @@
 %{
 #include <stdbool.h>
 #include "parser.h"
+#include "syntax_errs.h"
 
 int yylex(void);
 void yyerror(const char *);
 
 FILE *yyin;
-static AstNode * program;
+static ast_node_t * program;
 bool has_lex_err;
+syntax_err_t syntax_err;
 %}
 
 %locations
 
-%define api.value.type {AstNode *}
+%define api.value.type {ast_node_t *}
 
 %token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
 %token LEX_ERR
 
+%nonassoc ERROR
 %nonassoc LOWER_ELSE
 %nonassoc ELSE
 %right ASSIGN
@@ -35,9 +38,12 @@ Program: ExtDefList                 { program = $$ = create_nt_ast_node(AST_Prog
 ExtDefList: ExtDef ExtDefList       { $$ = create_nt_ast_node(AST_ExtDefList, &@$, 2, $1, $2); }
     | /* empty */                   { $$ = create_nt_ast_node(AST_ExtDefList, &@$, 0); }
     ;
-ExtDef: Specifier ExtDecList SEMI   { $$ = create_nt_ast_node(AST_ExtDef, &@$, 3, $1, $2, $3); }
-    | Specifier SEMI                { $$ = create_nt_ast_node(AST_ExtDef, &@$, 2, $1, $2); }
-    | Specifier FunDec CompSt       { $$ = create_nt_ast_node(AST_ExtDef, &@$, 3, $1, $2, $3); }
+ExtDef: Specifier ExtDecList SEMI            { $$ = create_nt_ast_node(AST_ExtDef, &@$, 3, $1, $2, $3); }
+    | Specifier SEMI                         { $$ = create_nt_ast_node(AST_ExtDef, &@$, 2, $1, $2); }
+    | Specifier FunDec CompSt                { $$ = create_nt_ast_node(AST_ExtDef, &@$, 3, $1, $2, $3); }
+    | Specifier ExtDecList error %prec ERROR { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_SEMI; }
+    | Specifier error            %prec ERROR { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_SEMI; }
+    | error SEMI                 %prec ERROR { $$ = NULL; }
     ;
 ExtDecList: VarDec                  { $$ = create_nt_ast_node(AST_ExtDecList, &@$, 1, $1); }
     | VarDec COMMA ExtDecList       { $$ = create_nt_ast_node(AST_ExtDecList, &@$, 3, $1, $2, $3); }
@@ -56,7 +62,10 @@ VarDec: ID                      { $$ = create_nt_ast_node(AST_VarDec, &@$, 1, $1
     | VarDec LB INT RB          { $$ = create_nt_ast_node(AST_VarDec, &@$, 4, $1, $2, $3, $4); }
     ;
 FunDec: ID LP VarList RP        { $$ = create_nt_ast_node(AST_FunDec, &@$, 4, $1, $2, $3, $4); }
-    | ID LP RP                  { $$ = create_nt_ast_node(AST_FunDec, &@$, 3, $1, $2, $3); }    
+    | ID LP RP                  { $$ = create_nt_ast_node(AST_FunDec, &@$, 3, $1, $2, $3); } 
+    // | ID LP VarList error %prec ERROR      { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_RP; }
+    // | ID LP error         %prec ERROR      { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_RP; }
+    // | error RP            %prec ERROR      { $$ = NULL; }
     ;
 VarList: ParamDec COMMA VarList { $$ = create_nt_ast_node(AST_VarList, &@$, 3, $1, $2, $3); }
     | ParamDec                  { $$ = create_nt_ast_node(AST_VarList, &@$, 1, $1); }
@@ -76,19 +85,24 @@ Stmt: Exp SEMI                              { $$ = create_nt_ast_node(AST_Stmt, 
     | IF LP Exp RP Stmt %prec LOWER_ELSE    { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
     | IF LP Exp RP Stmt ELSE Stmt           { $$ = create_nt_ast_node(AST_Stmt, &@$, 7, $1, $2, $3, $4, $5, $6, $7); }
     | WHILE LP Exp RP Stmt                  { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
+    | Exp error                 %prec ERROR { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_SEMI; }
+    | RETURN Exp error          %prec ERROR { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_SEMI; }
+    | error SEMI                %prec ERROR { $$ = NULL; }
     ;
 
 /* local definition */
-DefList: Def DefList        { $$ = create_nt_ast_node(AST_DefList, &@$, 2, $1, $2); }
-    | /* empty */           { $$ = create_nt_ast_node(AST_DefList, &@$, 0); }
+DefList: Def DefList                { $$ = create_nt_ast_node(AST_DefList, &@$, 2, $1, $2); }
+    | /* empty */                   { $$ = create_nt_ast_node(AST_DefList, &@$, 0); }
     ;
-Def: Specifier DecList SEMI { $$ = create_nt_ast_node(AST_Def, &@$, 3, $1, $2, $3); }
+Def: Specifier DecList SEMI               { $$ = create_nt_ast_node(AST_Def, &@$, 3, $1, $2, $3); }
+    // | Specifier DecList error %prec ERROR { $$ = NULL; syntax_err = SYNTAX_ERR_MISSING_SEMI; }
+    // | error SEMI              %prec ERROR { $$ = NULL; }
     ;
-DecList: Dec                { $$ = create_nt_ast_node(AST_DecList, &@$, 1, $1); }
-    | Dec COMMA DecList     { $$ = create_nt_ast_node(AST_DecList, &@$, 3, $1, $2, $3); }
+DecList: Dec                    { $$ = create_nt_ast_node(AST_DecList, &@$, 1, $1); }
+    | Dec COMMA DecList         { $$ = create_nt_ast_node(AST_DecList, &@$, 3, $1, $2, $3); }
     ;   
-Dec: VarDec                 { $$ = create_nt_ast_node(AST_Dec, &@$, 1, $1); }
-    | VarDec ASSIGN Exp     { $$ = create_nt_ast_node(AST_Dec, &@$, 3, $1, $2, $3); }
+Dec: VarDec                     { $$ = create_nt_ast_node(AST_Dec, &@$, 1, $1); }
+    | VarDec ASSIGN Exp         { $$ = create_nt_ast_node(AST_Dec, &@$, 3, $1, $2, $3); }
     ;
 
 /* Expression */
@@ -125,15 +139,11 @@ Args: Exp COMMA Args    { $$ = create_nt_ast_node(AST_Args, &@$, 3, $1, $2, $3);
 
 %%
 
-// void yyerror(YYLTYPE *locp, const char * msg) {
-//     fprintf(stderr, "Error at Line %d: %s\n", locp->first_line, locpmsg);
-// }
-
 void yyerror(const char * msg) {
-    fprintf(stderr, "Error type B at Line %d: %s\n", yylloc.first_line, msg);
+    fprintf(stderr, "Error type B at Line %d: %s\n", yylloc.first_line, syntax_err_msg(syntax_err));
 }
 
-AstNode * build_ast(FILE * file) {
+ast_node_t * build_ast(FILE * file) {
     // yydebug = 1;
     has_lex_err = false;
     yyin = file;

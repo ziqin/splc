@@ -4,59 +4,59 @@
 #include "syntax.tab.h"
 
 
-AstNode * create_ast_node(AstNodeType type) {
-    AstNode * node = (AstNode*)malloc(sizeof(AstNode));
+ast_node_t * create_ast_node(ast_type_name type) {
+    ast_node_t * node = (ast_node_t*)malloc(sizeof(ast_node_t));
     node->node_type = type;
     return node;
 }
 
 
-AstNode * create_int_ast_node(AstNodeType type, int val) {
-    IntAstNode * node = (IntAstNode*)malloc(sizeof(IntAstNode));
+ast_node_t * create_int_ast_node(ast_type_name type, int val) {
+    int_ast_node_t * node = (int_ast_node_t*)malloc(sizeof(int_ast_node_t));
     node->proto.node_type = type;
     node->value = val;
-    return (AstNode*)node;
+    return (ast_node_t*)node;
 }
 
 
-AstNode * create_float_ast_node(AstNodeType type, float val) {
-    FloatAstNode * node = (FloatAstNode*)malloc(sizeof(FloatAstNode));
+ast_node_t * create_float_ast_node(ast_type_name type, float val) {
+    float_ast_node_t * node = (float_ast_node_t*)malloc(sizeof(float_ast_node_t));
     node->proto.node_type = type;
     node->value = val;
-    return (AstNode*)node;
+    return (ast_node_t*)node;
 }
 
 
-AstNode * create_str_ast_node(AstNodeType type, const char * val) {
-    StringAstNode * node = (StringAstNode*)malloc(sizeof(AstNode));
+ast_node_t * create_str_ast_node(ast_type_name type, const char * val) {
+    str_ast_node_t * node = (str_ast_node_t*)malloc(sizeof(ast_node_t));
     node->proto.node_type = type;
     node->value = strdup(val);  // need to free
-    return (AstNode*)node;
+    return (ast_node_t*)node;
 }
 
 
-AstNode * create_nt_ast_node(AstNodeType type, const struct YYLTYPE * loc, int count, ...) {
-    NonterminallAstNode * node = (NonterminallAstNode*)malloc(sizeof(NonterminallAstNode) + count*sizeof(AstNode*));
+ast_node_t * create_nt_ast_node(ast_type_name type, const struct YYLTYPE * loc, int count, ...) {
+    nt_ast_node_t * node = (nt_ast_node_t*)malloc(sizeof(nt_ast_node_t) + count*sizeof(ast_node_t*));
     node->proto.node_type = type;
     node->first_line = loc->first_line;
     node->length = count;
-    node->children = (AstNode**)(node + 1);
+    ast_node_t ** children = (ast_node_t**)(node + 1);
     va_list args;
     va_start(args, count);
     for (int i = 0; i < count; ++i)
-        node->children[i] = va_arg(args, AstNode*);
+        children[i] = va_arg(args, ast_node_t*);
     va_end(args);
-    return (AstNode*)node;
+    return (ast_node_t*)node;
 }
 
 
-void delete_ast_node(AstNode * node) {
+void delete_ast_node(ast_node_t * node) {
     if (node == NULL) return;
     switch (node->node_type) {
     case AST_CHAR:
     case AST_TYPE:
     case AST_ID:
-        free((StringAstNode*)node);
+        free((str_ast_node_t*)node);
         break;
     case AST_Program: 
     case AST_ExtDefList:
@@ -77,9 +77,10 @@ void delete_ast_node(AstNode * node) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        NonterminallAstNode * nt_node = (NonterminallAstNode*)node;
+        nt_ast_node_t * nt_node = (nt_ast_node_t*)node;
+        ast_node_t ** children = (ast_node_t **)(nt_node + 1);
         for (int i = 0; i < nt_node->length; ++i)
-            delete_ast_node(nt_node->children[i]);
+            delete_ast_node(children[i]);
         free(node);
     } break;
     default:
@@ -102,21 +103,21 @@ static const char * ast_type2name[] = {
 };
 
 
-void fprint_ast_node(FILE * fp, const AstNode * node, int indent) {
+void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent) {
     switch (node->node_type) {
     case AST_INT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s: %d\n", ast_type2name[node->node_type], ((IntAstNode*)node)->value);
+        fprintf(fp, "%s: %d\n", ast_type2name[node->node_type], ((int_ast_node_t *)node)->value);
         break;
     case AST_FLOAT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s: %f\n", ast_type2name[node->node_type], ((FloatAstNode*)node)->value);
+        fprintf(fp, "%s: %f\n", ast_type2name[node->node_type], ((float_ast_node_t *)node)->value);
         break;
     case AST_TYPE:
     case AST_ID:
     case AST_CHAR:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s: %s\n", ast_type2name[node->node_type], ((StringAstNode*)node)->value);
+        fprintf(fp, "%s: %s\n", ast_type2name[node->node_type], ((str_ast_node_t *)node)->value);
         break;
     case AST_STRUCT: 
     case AST_IF:
@@ -168,12 +169,13 @@ void fprint_ast_node(FILE * fp, const AstNode * node, int indent) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        NonterminallAstNode * nt_node = (NonterminallAstNode*)node;
+        nt_ast_node_t * nt_node = (nt_ast_node_t*)node;
         if (nt_node->length > 0) {
             for (int i = 0; i < indent; ++i) fputc(' ', fp);
             fprintf(fp, "%s (%d)\n", ast_type2name[nt_node->proto.node_type], nt_node->first_line);
+            ast_node_t ** children = (ast_node_t **)(nt_node + 1);
             for (int i = 0; i < nt_node->length; ++i)
-                fprint_ast_node(fp, nt_node->children[i], indent+2);
+                fprint_ast_node(fp, children[i], indent+2);
         }
     } break;
     default: break;

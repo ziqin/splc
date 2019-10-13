@@ -57,42 +57,42 @@ typedef enum {
     AST_Dec,
     AST_Exp,
     AST_Args,
-} AstNodeType;
+} ast_type_name;
 
-typedef struct AstNode {
-    AstNodeType node_type;
-} AstNode;
+typedef struct ast_node_t {
+    ast_type_name node_type;
+} ast_node_t;
 
 typedef struct {
-    AstNode proto;
+    ast_node_t proto;
     int value;
-} IntAstNode;
+} int_ast_node_t;
 
 typedef struct {
-    AstNode proto;
+    ast_node_t proto;
     float value;
-} FloatAstNode;
+} float_ast_node_t;
 
 typedef struct {
-    AstNode proto;
+    ast_node_t proto;
     const char * value;
-} StringAstNode;
+} str_ast_node_t;
 
 typedef struct {
-    AstNode proto;
+    ast_node_t proto;
     int first_line;
     int length;
-    AstNode ** children;
-} NonterminallAstNode;
+    // ast_node_t ** children;
+} nt_ast_node_t;
 
 struct YYLTYPE;
 
-AstNode * create_ast_node(AstNodeType);
-AstNode * create_int_ast_node(AstNodeType, int);
-AstNode * create_float_ast_node(AstNodeType, float);
-AstNode * create_str_ast_node(AstNodeType, const char *);
-AstNode * create_nt_ast_node(AstNodeType, const struct YYLTYPE *, int, ...);
-void delete_ast_node(AstNode *);
-void fprint_ast_node(FILE * fp, const AstNode * node, int indent);
+ast_node_t * create_ast_node(ast_type_name);
+ast_node_t * create_int_ast_node(ast_type_name, int);
+ast_node_t * create_float_ast_node(ast_type_name, float);
+ast_node_t * create_str_ast_node(ast_type_name, const char *);
+ast_node_t * create_nt_ast_node(ast_type_name, const struct YYLTYPE *, int, ...);
+void delete_ast_node(ast_node_t *);
+void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent);
 
 #endif

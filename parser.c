@@ -33,7 +33,7 @@ int main(int argc, const char ** argv) {
     freopen(target_path, "w", stderr);
 
     errno = 0;
-    AstNode * ast = parse_file(src_path);
+    ast_node_t * ast = parse_file(src_path);
     if (!ast) // lexical/syntax error
         exit((errno & IO_ERR) ? IO_ERR : PARSING_ERR);
 
@@ -52,8 +52,8 @@ int main(int argc, const char ** argv) {
 }
 
 
-AstNode * parse_file(const char * src_path) {
-    AstNode * ast = NULL;
+ast_node_t * parse_file(const char * src_path) {
+    ast_node_t * ast = NULL;
     FILE * src_file = fopen(src_path, "r");
     if (src_file) {
         ast = build_ast(src_file);
