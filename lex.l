@@ -5,6 +5,7 @@
 #include "syntax.tab.h"
 
 int yycolno = 1;
+
 #define YY_USER_ACTION              \
     yylloc.first_line = yylineno;   \
     yylloc.first_column = yycolno;  \
@@ -12,6 +13,7 @@ int yycolno = 1;
     yycolno += yyleng;              \
     yylloc.last_column = yycolno;
 
+void lex_complain(int lineno, const char * token);
 %}
 
 %option yylineno
@@ -71,6 +73,10 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 {whitespace}+   {}
 {newline}       { yycolno = 1; }
 
-{known_err}     {}
-.               {}
+{known_err}     { lex_complain(yylineno, yytext); return LEX_ERR; }
+.               { lex_complain(yylineno, yytext); return LEX_ERR; }
 %%
+
+void lex_complain(int lineno, const char * token) {
+    fprintf(stderr, "Error type A at Line %d: Mysterious lexeme %s\n", lineno, token);
+}

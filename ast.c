@@ -51,6 +51,7 @@ AstNode * create_nt_ast_node(AstNodeType type, const struct YYLTYPE * loc, int c
 
 
 void delete_ast_node(AstNode * node) {
+    if (node == NULL) return;
     switch (node->node_type) {
     case AST_CHAR:
     case AST_TYPE:
@@ -105,11 +106,11 @@ void fprint_ast_node(FILE * fp, const AstNode * node, int indent) {
     switch (node->node_type) {
     case AST_INT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s, %d\n", ast_type2name[node->node_type], ((IntAstNode*)node)->value);
+        fprintf(fp, "%s: %d\n", ast_type2name[node->node_type], ((IntAstNode*)node)->value);
         break;
     case AST_FLOAT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s, %f\n", ast_type2name[node->node_type], ((FloatAstNode*)node)->value);
+        fprintf(fp, "%s: %f\n", ast_type2name[node->node_type], ((FloatAstNode*)node)->value);
         break;
     case AST_TYPE:
     case AST_ID:

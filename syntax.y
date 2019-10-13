@@ -1,4 +1,5 @@
 %{
+#include <stdbool.h>
 #include "parser.h"
 
 int yylex(void);
@@ -6,6 +7,7 @@ void yyerror(const char *);
 
 FILE *yyin;
 static AstNode * program;
+bool has_lex_err;
 %}
 
 %locations
@@ -13,7 +15,7 @@ static AstNode * program;
 %define api.value.type {AstNode *}
 
 %token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
-// %token LEX_ERR
+%token LEX_ERR
 
 %nonassoc LOWER_ELSE
 %nonassoc ELSE
@@ -114,6 +116,7 @@ Exp: Exp ASSIGN Exp                 { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $
     | INT                           { $$ = create_nt_ast_node(AST_Exp, &@$, 1, $1); }
     | FLOAT                         { $$ = create_nt_ast_node(AST_Exp, &@$, 1, $1); }
     | CHAR                          { $$ = create_nt_ast_node(AST_Exp, &@$, 1, $1); }
+    | LEX_ERR                       { $$ = NULL; has_lex_err = true; }
     ;
 
 Args: Exp COMMA Args    { $$ = create_nt_ast_node(AST_Args, &@$, 3, $1, $2, $3); }
@@ -122,12 +125,17 @@ Args: Exp COMMA Args    { $$ = create_nt_ast_node(AST_Args, &@$, 3, $1, $2, $3);
 
 %%
 
+// void yyerror(YYLTYPE *locp, const char * msg) {
+//     fprintf(stderr, "Error at Line %d: %s\n", locp->first_line, locpmsg);
+// }
+
 void yyerror(const char * msg) {
-    fprintf(stderr, "%s\n", msg);
+    fprintf(stderr, "Error type B at Line %d: %s\n", yylloc.first_line, msg);
 }
 
 AstNode * build_ast(FILE * file) {
     // yydebug = 1;
+    has_lex_err = false;
     yyin = file;
-    return yyparse() == 0 ? program : NULL;
+    return yyparse() == 0 && !has_lex_err ? program : (delete_ast_node(program), NULL);
 }

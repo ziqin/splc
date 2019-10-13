@@ -2,19 +2,18 @@ CC=gcc
 LEX=flex
 BISON=bison
 
-TARGET_DIR=bin
-TARGET=$(TARGET_DIR)/splc
+TARGET=bin/splc
 
-CFLAGS=-Wall -Wno-unused-function -O2
+CFLAGS=-Wall -Wno-unused-function
 LDFLAGS=-lfl -ly
 BISONFLAGS=-t -d -v
 
-splc: main.o lex.yy.o syntax.tab.o ast.o
-	@mkdir -p $(TARGET_DIR)
-	$(CC) $(CFLAGS) -o $(TARGET) main.o lex.yy.o syntax.tab.o ast.o $(LDFLAGS)
-	@chmod +x $(TARGET)
-main.o: main.c syntax.tab.h ast.h
-	$(CC) $(CFLAGS) -c main.c
+splc: parser.exe
+	install -D parser.exe bin/splc
+parser.exe: parser.o lex.yy.o syntax.tab.o ast.o
+	$(CC) $(CFLAGS) -o parser.exe parser.o lex.yy.o syntax.tab.o ast.o $(LDFLAGS)
+parser.o: parser.c syntax.tab.h ast.h
+	$(CC) $(CFLAGS) -c parser.c
 lex.yy.o: lex.yy.c syntax.tab.h ast.h
 	$(CC) $(CFLAGS) -c lex.yy.c
 syntax.tab.o: syntax.tab.c syntax.tab.h ast.h
