@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+#include "syntax.tab.h"
 
 
 AstNode * create_ast_node(AstNodeType type) {
@@ -34,11 +35,11 @@ AstNode * create_str_ast_node(AstNodeType type, const char * val) {
 }
 
 
-AstNode * create_array_ast_node(AstNodeType type, int count, ...) {
-    ArrayAstNode * node = (ArrayAstNode*)malloc(sizeof(ArrayAstNode) + count*sizeof(AstNode*));
+AstNode * create_nt_ast_node(AstNodeType type, const struct YYLTYPE * loc, int count, ...) {
+    NonterminallAstNode * node = (NonterminallAstNode*)malloc(sizeof(NonterminallAstNode) + count*sizeof(AstNode*));
     node->proto.node_type = type;
+    node->first_line = loc->first_line;
     node->length = count;
-
     node->children = (AstNode**)(node + 1);
     va_list args;
     va_start(args, count);
@@ -75,9 +76,9 @@ void delete_ast_node(AstNode * node) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        ArrayAstNode * array_node = (ArrayAstNode*)node;
-        for (int i = 0; i < array_node->length; ++i)
-            delete_ast_node(array_node->children[i]);
+        NonterminallAstNode * nt_node = (NonterminallAstNode*)node;
+        for (int i = 0; i < nt_node->length; ++i)
+            delete_ast_node(nt_node->children[i]);
         free(node);
     } break;
     default:
@@ -166,12 +167,12 @@ void fprint_ast_node(FILE * fp, const AstNode * node, int indent) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        ArrayAstNode * array_node = (ArrayAstNode*)node;
-        if (array_node->length > 0) {
+        NonterminallAstNode * nt_node = (NonterminallAstNode*)node;
+        if (nt_node->length > 0) {
             for (int i = 0; i < indent; ++i) fputc(' ', fp);
-            fprintf(fp, "%s\n", ast_type2name[node->node_type]);
-            for (int i = 0; i < array_node->length; ++i)
-                fprint_ast_node(fp, array_node->children[i], indent+2);
+            fprintf(fp, "%s (%d)\n", ast_type2name[nt_node->proto.node_type], nt_node->first_line);
+            for (int i = 0; i < nt_node->length; ++i)
+                fprint_ast_node(fp, nt_node->children[i], indent+2);
         }
     } break;
     default: break;

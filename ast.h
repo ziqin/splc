@@ -80,15 +80,18 @@ typedef struct {
 
 typedef struct {
     AstNode proto;
+    int first_line;
     int length;
     AstNode ** children;
-} ArrayAstNode;
+} NonterminallAstNode;
+
+struct YYLTYPE;
 
 AstNode * create_ast_node(AstNodeType);
 AstNode * create_int_ast_node(AstNodeType, int);
 AstNode * create_float_ast_node(AstNodeType, float);
 AstNode * create_str_ast_node(AstNodeType, const char *);
-AstNode * create_array_ast_node(AstNodeType, int, ...);
+AstNode * create_nt_ast_node(AstNodeType, const struct YYLTYPE *, int, ...);
 void delete_ast_node(AstNode *);
 void fprint_ast_node(FILE * fp, const AstNode * node, int indent);
 
