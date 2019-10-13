@@ -29,6 +29,9 @@ int main(int argc, const char ** argv) {
         strcpy(target_path + name_length, ".out");              // append .out
     }
 
+    // redirect stderr to target_path
+    freopen(target_path, "w", stderr);
+
     errno = 0;
     AstNode * ast = parse_file(src_path);
     if (!ast) // lexical/syntax error
