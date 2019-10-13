@@ -29,6 +29,7 @@ FLOAT       {digit}+\.{digit}+
 CHAR        ('[^']'|'\\x{hex}{1,2}')
 TYPE        (int|float|char)
 ID          ({letter}|_)({letter}|{digit}|_){0,31}
+comment     "//"[^\r\n]*
 
 fake_dec    {digit}+
 fake_hex    0(X|x)({digit}|{letter})*
@@ -71,7 +72,8 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 "}"             { yylval = create_ast_node(AST_RC); return RC; }
 
 {whitespace}+   {}
-{newline}       { yycolno = 1; }
+{comment}       {}
+{newline}       { yycolno = 1; }  // reset
 
 {known_err}     { lex_complain(yylineno, yytext); return LEX_ERR; }
 .               { lex_complain(yylineno, yytext); return LEX_ERR; }
