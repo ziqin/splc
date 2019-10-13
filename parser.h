@@ -6,5 +6,6 @@
 #include "ast.h"
 
 AstNode * build_ast(FILE *);
+AstNode * parse_file(const char * src_path);
 
 #endif

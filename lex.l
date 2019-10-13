@@ -78,5 +78,5 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 %%
 
 void lex_complain(int lineno, const char * token) {
-    fprintf(stderr, "Error type A at Line %d: Mysterious lexeme %s\n", lineno, token);
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", lineno, token);
 }
