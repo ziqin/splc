@@ -5,6 +5,8 @@ const char * syntax_err_msg(syntax_err_t err) {
         "Missing semicolon ';'",
         "Missing closing parenthesis ')'",
         "Missing opening parenthesis '('",
+        "Missing closing bracket ']'",
+        // "Missing closing brace '}'",
         "Statement precede declaration",
     };
     return err_msgs[err];

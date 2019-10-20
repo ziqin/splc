@@ -25,6 +25,7 @@ static bool has_err;
 %nonassoc LOWER_ELSE
 %nonassoc ELSE
 
+%nonassoc SEMI
 %nonassoc ARGS
 %right COMMA
 %right ASSIGN
@@ -60,12 +61,14 @@ Specifier: TYPE                             { $$ = create_nt_ast_node(AST_Specif
     ;
 StructSpecifier: STRUCT ID LC DefList RC    { $$ = create_nt_ast_node(AST_StructSpecifier, &@$, 5, $1, $2, $3, $4, $5); }
     | STRUCT ID                             { $$ = create_nt_ast_node(AST_StructSpecifier, &@$, 2, $1, $2); }
+    // | STRUCT ID LC DefList      %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); delete_ast_node($4); report_err(@4.last_line, SYNTAX_ERR_MISSING_RC); }
     ;
 
 /* declarator */
 VarDec: ID                      { $$ = create_nt_ast_node(AST_VarDec, &@$, 1, $1); }
     | VarDec LB INT RB          { $$ = create_nt_ast_node(AST_VarDec, &@$, 4, $1, $2, $3, $4); }
     | LEX_ERR       %prec ERROR { $$ = NULL; has_err = true; }
+    | VarDec LB INT %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
     ;
 FunDec: ID LP VarList RP        { $$ = create_nt_ast_node(AST_FunDec, &@$, 4, $1, $2, $3, $4); }
     | ID LP RP                  { $$ = create_nt_ast_node(AST_FunDec, &@$, 3, $1, $2, $3); }
@@ -82,6 +85,7 @@ ParamDec: Specifier VarDec      { $$ = create_nt_ast_node(AST_ParamDec, &@$, 2, 
 
 /* statement */
 CompSt: LC DefList StmtList RC              { $$ = create_nt_ast_node(AST_CompSt, &@$, 4, $1, $2, $3, $4); }
+    // | LC DefList StmtList       %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RC); }
     ;
 StmtList: Stmt StmtList                     { $$ = create_nt_ast_node(AST_StmtList, &@$, 2, $1, $2); }
     | /* empty */                           { $$ = create_nt_ast_node(AST_StmtList, &@$, 0); }
@@ -103,8 +107,8 @@ Stmt: Exp SEMI                              { $$ = create_nt_ast_node(AST_Stmt, 
     ;
 
 /* local definition */
-DefList: Def DefList                { $$ = create_nt_ast_node(AST_DefList, &@$, 2, $1, $2); }
-    | /* empty */                   { $$ = create_nt_ast_node(AST_DefList, &@$, 0); }
+DefList: Def DefList            { $$ = create_nt_ast_node(AST_DefList, &@$, 2, $1, $2); }
+    | /* empty */               { $$ = create_nt_ast_node(AST_DefList, &@$, 0); }
     ;
 Def: Specifier DecList SEMI               { $$ = create_nt_ast_node(AST_Def, &@$, 3, $1, $2, $3); }
     | Specifier DecList       %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); 
@@ -147,6 +151,7 @@ Exp: Exp ASSIGN Exp                 { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $
     | LP Exp           %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
     | ID LP Args       %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
     | ID LP            %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    | Exp LB Exp       %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
     // TODO:
     // | Exp RP           %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@1.first_line, SYNTAX_ERR_MISSING_LP); }
     // | ID Args RP       %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
