@@ -93,10 +93,10 @@ void delete_ast_node(ast_node_t * node) {
 
 static const char * ast_type2name[] = {
     "INT",      "FLOAT",    "TYPE",     "ID",       "CHAR",     "STRUCT",   "IF",       "ELSE", 
-    "WHILE",    "RETURN",   "DOT",      "SEMI",     "COMMA",    "ASSIGN",   "LT",       "LE", 
-    "GT",       "GE",       "NE",       "EQ",       "PLUS",     "MINUS",    "MUL",      "DIV", 
-    "AND",      "OR",       "NOT",      "LP",       "RP",       "LB",       "RB",       "LC",
-    "RC",
+    "WHILE",    "FOR",      "RETURN",   "DOT",      "SEMI",     "COMMA",    "ASSIGN",   "LT",
+    "LE",       "GT",       "GE",       "NE",       "EQ",       "PLUS",     "MINUS",    "MUL",
+    "DIV",      "AND",      "OR",       "NOT",      "LP",       "RP",       "LB",       "RB",
+    "LC",       "RC",
     "Program",      "ExtDefList",       "ExtDef",       "ExtDecList",
     "Specifier",    "StructSpecifier",  "VarDec",       "FunDec",
     "VarList",      "ParamDec",         "CompSt",       "StmtList", 
@@ -129,6 +129,7 @@ void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent) {
     case AST_IF:
     case AST_ELSE: 
     case AST_WHILE: 
+    case AST_FOR:
     case AST_RETURN: 
     case AST_DOT:
     case AST_SEMI: 

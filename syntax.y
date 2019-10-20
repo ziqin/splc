@@ -17,7 +17,7 @@ static bool has_err;
 
 %define api.value.type {ast_node_t *}
 
-%token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
+%token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE FOR RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
 %token LEX_ERR LEX_ERR_BLK
 
 %nonassoc ERROR
@@ -98,6 +98,14 @@ Stmt: Exp SEMI                              { $$ = create_nt_ast_node(AST_Stmt, 
     | IF LP Exp RP Stmt %prec LOWER_ELSE    { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
     | IF LP Exp RP Stmt ELSE Stmt           { $$ = create_nt_ast_node(AST_Stmt, &@$, 7, $1, $2, $3, $4, $5, $6, $7); }
     | WHILE LP Exp RP Stmt                  { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
+    | FOR LP SEMI SEMI RP Stmt              { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, NULL, $3, NULL, $4, NULL, $5, $6); }
+    | FOR LP Exp SEMI SEMI RP Stmt          { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, $3, $4, NULL, $5, NULL, $6, $7); }
+    | FOR LP SEMI Exp SEMI RP Stmt          { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, NULL, $3, $4, $5, NULL, $6, $7); }
+    | FOR LP SEMI SEMI Exp RP Stmt          { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, NULL, $3, NULL, $4, $5, $6, $7); }
+    | FOR LP Exp SEMI Exp SEMI RP Stmt      { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, $3, $4, $5, $6, NULL, $7, $8); }
+    | FOR LP Exp SEMI SEMI Exp RP Stmt      { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, $3, $4, NULL, $5, $6, $7, $8); }
+    | FOR LP SEMI Exp SEMI Exp RP Stmt      { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, NULL, $3, $4, $5, $6, $7, $8); }
+    | FOR LP Exp SEMI Exp SEMI Exp RP Stmt  { $$ = create_nt_ast_node(AST_Stmt, &@$, 9, $1, $2, $3, $4, $5, $6, $7, $8, $9); }
     | Exp                       %prec ERROR { $$ = NULL; delete_ast_node($1); report_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
     | RETURN Exp                %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
     | LEX_ERR_BLK               %prec ERROR { $$ = NULL; has_err = true; }

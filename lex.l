@@ -54,6 +54,7 @@ struct          { yylval = create_ast_node(AST_STRUCT); return STRUCT; }
 if              { yylval = create_ast_node(AST_IF); return IF; }
 else            { yylval = create_ast_node(AST_ELSE); return ELSE; }
 while           { yylval = create_ast_node(AST_WHILE); return WHILE; }
+for             { yylval = create_ast_node(AST_FOR); return FOR; }
 return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 {ID}            { yylval = create_str_ast_node(AST_ID, yytext); return ID; }  // the order matters
 "."             { yylval = create_ast_node(AST_DOT); return DOT; }

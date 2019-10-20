@@ -1,0 +1,17 @@
+int main() {
+    int i, j, m, n, sum;
+
+    sum = 0;
+    m = 32;
+    n = 64;
+
+    for (i = 0; i < m; i = i + 1) {
+        for (j = i; j < n; j = j + 1)
+            sum = sum + i + j;
+    }
+
+    for (;;)
+        putchar(' ');
+
+    return 0;
+}
