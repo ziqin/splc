@@ -75,7 +75,7 @@ typedef struct {
 
 typedef struct {
     ast_node_t proto;
-    const char * value;
+    char * value;
 } str_ast_node_t;
 
 typedef struct {

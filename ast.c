@@ -36,27 +36,29 @@ ast_node_t * create_str_ast_node(ast_type_name type, const char * val) {
 
 
 ast_node_t * create_nt_ast_node(ast_type_name type, const struct YYLTYPE * loc, int count, ...) {
-    nt_ast_node_t * node = (nt_ast_node_t*)malloc(sizeof(nt_ast_node_t) + count*sizeof(ast_node_t*));
+    nt_ast_node_t * node = (nt_ast_node_t *)malloc(sizeof(nt_ast_node_t) + count * sizeof(ast_node_t *));
     node->proto.node_type = type;
     node->first_line = loc->first_line;
     node->length = count;
-    ast_node_t ** children = (ast_node_t**)(node + 1);
+    ast_node_t ** children = (ast_node_t **)(node + 1);
     va_list args;
     va_start(args, count);
     for (int i = 0; i < count; ++i)
-        children[i] = va_arg(args, ast_node_t*);
+        children[i] = va_arg(args, ast_node_t *);
     va_end(args);
-    return (ast_node_t*)node;
+    return (ast_node_t *)node;
 }
 
 
 void delete_ast_node(ast_node_t * node) {
     if (node == NULL) return;
+
     switch (node->node_type) {
     case AST_CHAR:
     case AST_TYPE:
     case AST_ID:
-        free((str_ast_node_t*)node);
+        free(((str_ast_node_t *)node)->value);
+        free(node);
         break;
     case AST_Program: 
     case AST_ExtDefList:
@@ -77,7 +79,7 @@ void delete_ast_node(ast_node_t * node) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        nt_ast_node_t * nt_node = (nt_ast_node_t*)node;
+        nt_ast_node_t * nt_node = (nt_ast_node_t *)node;
         ast_node_t ** children = (ast_node_t **)(nt_node + 1);
         for (int i = 0; i < nt_node->length; ++i)
             delete_ast_node(children[i]);
@@ -104,6 +106,8 @@ static const char * ast_type2name[] = {
 
 
 void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent) {
+    if (node == NULL) return;
+
     switch (node->node_type) {
     case AST_INT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
@@ -169,7 +173,7 @@ void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent) {
     case AST_Dec:
     case AST_Exp:
     case AST_Args: {
-        nt_ast_node_t * nt_node = (nt_ast_node_t*)node;
+        nt_ast_node_t * nt_node = (nt_ast_node_t *)node;
         if (nt_node->length > 0) {
             for (int i = 0; i < indent; ++i) fputc(' ', fp);
             fprintf(fp, "%s (%d)\n", ast_type2name[nt_node->proto.node_type], nt_node->first_line);
