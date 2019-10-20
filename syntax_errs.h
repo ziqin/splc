@@ -4,6 +4,7 @@
 typedef enum {
     SYNTAX_ERR_MISSING_SEMI,
     SYNTAX_ERR_MISSING_RP,
+    SYNTAX_ERR_MISSING_LP,
     SYNTAX_ERR_DEC_STMT_ORDER,
 } syntax_err_t;
 

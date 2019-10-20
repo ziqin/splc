@@ -78,11 +78,11 @@ typedef struct {
     char * value;
 } str_ast_node_t;
 
+// nonterminal
 typedef struct {
     ast_node_t proto;
     int first_line;
     int length;
-    // ast_node_t ** children;
 } nt_ast_node_t;
 
 struct YYLTYPE;

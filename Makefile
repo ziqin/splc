@@ -14,7 +14,7 @@ splc: parser.exe
 	install -D parser.exe $(TARGET)
 parser.exe: $(OBJECTS)
 	$(CC) $(CFLAGS) -o parser.exe $(OBJECTS) $(LDFLAGS)
-parser.o: parser.c syntax.tab.h ast.h
+parser.o: parser.c parser.h ast.h
 	$(CC) $(CFLAGS) -c parser.c
 lex.yy.o: lex.yy.c syntax.tab.h ast.h
 	$(CC) $(CFLAGS) -c lex.yy.c
@@ -29,5 +29,5 @@ lex.yy.c: lex.l
 syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) syntax.y
 clean:
-	@rm -rf bin/ *.yy.c *.tab.c *.tab.h *.output $(OBJECTS)
+	@rm -rf bin/ parser.exe *.yy.c *.tab.c *.tab.h *.output $(OBJECTS)
 .PHONY: clean

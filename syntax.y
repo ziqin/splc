@@ -71,6 +71,8 @@ FunDec: ID LP VarList RP        { $$ = create_nt_ast_node(AST_FunDec, &@$, 4, $1
     | ID LP RP                  { $$ = create_nt_ast_node(AST_FunDec, &@$, 3, $1, $2, $3); }
     | ID LP VarList %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
     | ID LP         %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    // | ID VarList RP %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
+    | ID RP         %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
     ;
 VarList: ParamDec COMMA VarList { $$ = create_nt_ast_node(AST_VarList, &@$, 3, $1, $2, $3); }
     | ParamDec                  { $$ = create_nt_ast_node(AST_VarList, &@$, 1, $1); }
@@ -93,6 +95,7 @@ Stmt: Exp SEMI                              { $$ = create_nt_ast_node(AST_Stmt, 
     | WHILE LP Exp RP Stmt                  { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
     | Exp                       %prec ERROR { $$ = NULL; delete_ast_node($1); report_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
     | RETURN Exp                %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | error SEMI                %prec ERROR { $$ = NULL; delete_ast_node($2); }
     // TODO:
     // | IF LP Exp Stmt      %prec LOWER_ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
     // | IF LP Exp Stmt ELSE Stmt  %prec ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
@@ -144,6 +147,10 @@ Exp: Exp ASSIGN Exp                 { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $
     | LP Exp           %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
     | ID LP Args       %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
     | ID LP            %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    // TODO:
+    // | Exp RP           %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@1.first_line, SYNTAX_ERR_MISSING_LP); }
+    // | ID Args RP       %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); delete_ast_node($3); report_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
+    // | ID RP            %prec ERROR  { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
     ;
 
 Args: Exp COMMA Args    %prec ARGS { $$ = create_nt_ast_node(AST_Args, &@$, 3, $1, $2, $3); }
