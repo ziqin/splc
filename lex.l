@@ -1,4 +1,5 @@
 %{
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include "ast.h"
@@ -14,7 +15,7 @@ static int prev_state;
     yycolno += yyleng;              \
     yylloc.last_column = yycolno;
 
-void report_lex_err(int, const char *);
+void report_lex_err(int, const char *, ...);
 
 %}
 
@@ -28,7 +29,9 @@ whitespace      (" "|\t)
 newline         (\n|\r|\r\n)
 
 INT             (0|[1-9]{digit}{0,9}|0(X|x)(0|[1-9A-Fa-f]{hex}{0,7}))
-FLOAT           {digit}+\.{digit}+
+fraction        {digit}+\.{digit}+
+scientific      {digit}+(\.{digit}+)?(E|e)("+"|"-")?{digit}+
+FLOAT           ({fraction}|{scientific})
 CHAR            ('[^']'|'\\x{hex}{1,2}')
 TYPE            (int|float|char)
 ID              ({letter}|_)({letter}|{digit}|_){0,31}
@@ -81,14 +84,19 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 {line_cmmt}     ;
 {newline}       { yycolno = 1; }  // reset
 
-{blk_cmmt_begin}            { prev_state = YYSTATE; BEGIN BLK_COMMENT; }
-<BLK_COMMENT>{blk_cmmt_end} { BEGIN prev_state; }
-<BLK_COMMENT>(.|{newline})  ;
+{blk_cmmt_begin}                { prev_state = YYSTATE; BEGIN BLK_COMMENT; }
+{blk_cmmt_end}                  { report_lex_err(yylineno, "Illegal block comment"); return LEX_ERR_BLK; }
+<BLK_COMMENT>{blk_cmmt_begin}   { report_lex_err(yylineno, "Illegal block comment"); return LEX_ERR_BLK; }
+<BLK_COMMENT>{blk_cmmt_end}     { BEGIN prev_state; }
+<BLK_COMMENT>(.|{newline})      ;
 
-{known_err}     { report_lex_err(yylineno, yytext); return LEX_ERR; }
-.               { report_lex_err(yylineno, yytext); return LEX_ERR; }
+{known_err}|.   { report_lex_err(yylineno, "unknown lexeme %s\n", yytext); return LEX_ERR_BLK; }
 %%
 
-void report_lex_err(int lineno, const char * lexeme) {
-    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", lineno, lexeme);
+void report_lex_err(int lineno, const char * fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    fprintf(stderr, "Error type A at Line %d: ", lineno);
+    vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
 }

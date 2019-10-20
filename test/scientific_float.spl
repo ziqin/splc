@@ -1,0 +1,7 @@
+int floating(float n)
+{
+  float pi = 3.141593;
+  float avogadro = 6.0221E23;
+  float gravitation = 6.6743e-11;
+  return n * pi * avogadro * gravitation;
+}

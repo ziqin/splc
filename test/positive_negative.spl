@@ -1,0 +1,5 @@
+int positive_negative() {
+   int pos = +100;
+   float neg = -2.333;
+   return 0;
+}

@@ -1,0 +1,72 @@
+Program (1)
+  ExtDefList (1)
+    ExtDef (1)
+      Specifier (1)
+        TYPE: int
+      FunDec (1)
+        ID: floating
+        LP
+        VarList (1)
+          ParamDec (1)
+            Specifier (1)
+              TYPE: float
+            VarDec (1)
+              ID: n
+        RP
+      CompSt (2)
+        LC
+        DefList (3)
+          Def (3)
+            Specifier (3)
+              TYPE: float
+            DecList (3)
+              Dec (3)
+                VarDec (3)
+                  ID: pi
+                ASSIGN
+                Exp (3)
+                  FLOAT: 3.141593
+            SEMI
+          DefList (4)
+            Def (4)
+              Specifier (4)
+                TYPE: float
+              DecList (4)
+                Dec (4)
+                  VarDec (4)
+                    ID: avogadro
+                  ASSIGN
+                  Exp (4)
+                    FLOAT: 602209993100921751470080.000000
+              SEMI
+            DefList (5)
+              Def (5)
+                Specifier (5)
+                  TYPE: float
+                DecList (5)
+                  Dec (5)
+                    VarDec (5)
+                      ID: gravitation
+                    ASSIGN
+                    Exp (5)
+                      FLOAT: 6.674300E-11
+                SEMI
+        StmtList (6)
+          Stmt (6)
+            RETURN
+            Exp (6)
+              Exp (6)
+                Exp (6)
+                  Exp (6)
+                    ID: n
+                  MUL
+                  Exp (6)
+                    ID: pi
+                MUL
+                Exp (6)
+                  ID: avogadro
+              MUL
+              Exp (6)
+                ID: gravitation
+            SEMI
+        RC

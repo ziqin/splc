@@ -1,0 +1,17 @@
+/* SPLC Test: single-line comments and block comments
+ * 
+ * 2019 (c) Ziqin Wang <wangzq2017@mail.sustech.edu.cn>
+ */
+
+int main() {
+    /// Life is not easy,
+    /** especially for students taking CS323. ****/
+
+    /* Invalid /* block comment */
+
+    /*
+        /* Nested comments are illegal */
+    */
+
+    return 0;
+}

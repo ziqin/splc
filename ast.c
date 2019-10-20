@@ -115,7 +115,9 @@ void fprint_ast_node(FILE * fp, const ast_node_t * node, int indent) {
         break;
     case AST_FLOAT:
         for (int i = 0; i < indent; ++i) fputc(' ', fp);
-        fprintf(fp, "%s: %f\n", ast_type2name[node->node_type], ((float_ast_node_t *)node)->value);
+        float val = ((float_ast_node_t *)node)->value;
+        const char * fmt = val >= 1e-4 ? "%s: %f\n" : "%s: %E\n";
+        fprintf(fp, fmt, ast_type2name[node->node_type], val);
         break;
     case AST_TYPE:
     case AST_ID:

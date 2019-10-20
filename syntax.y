@@ -18,7 +18,7 @@ static bool has_err;
 %define api.value.type {ast_node_t *}
 
 %token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
-%token LEX_ERR
+%token LEX_ERR LEX_ERR_BLK
 
 %nonassoc ERROR
 
@@ -34,7 +34,7 @@ static bool has_err;
 %left LT LE GT GE EQ NE
 %left PLUS MINUS
 %left MUL DIV
-%right UMINUS NOT
+%right UPLUS UMINUS NOT
 %nonassoc INT FLOAT CHAR ID LEX_ERR
 %left LP RP LB RB DOT
 
@@ -44,6 +44,7 @@ Program: ExtDefList                 { program = $$ = create_nt_ast_node(AST_Prog
     ;
 ExtDefList: ExtDef ExtDefList       { $$ = create_nt_ast_node(AST_ExtDefList, &@$, 2, $1, $2); }
     | /* empty */                   { $$ = create_nt_ast_node(AST_ExtDefList, &@$, 0); }
+    | LEX_ERR_BLK                   { $$ = NULL; has_err = true; }
     ;
 ExtDef: Specifier ExtDecList SEMI            { $$ = create_nt_ast_node(AST_ExtDef, &@$, 3, $1, $2, $3); }
     | Specifier SEMI                         { $$ = create_nt_ast_node(AST_ExtDef, &@$, 2, $1, $2); }
@@ -99,6 +100,7 @@ Stmt: Exp SEMI                              { $$ = create_nt_ast_node(AST_Stmt, 
     | WHILE LP Exp RP Stmt                  { $$ = create_nt_ast_node(AST_Stmt, &@$, 5, $1, $2, $3, $4, $5); }
     | Exp                       %prec ERROR { $$ = NULL; delete_ast_node($1); report_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
     | RETURN Exp                %prec ERROR { $$ = NULL; delete_ast_node($1); delete_ast_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | LEX_ERR_BLK               %prec ERROR { $$ = NULL; has_err = true; }
     | error SEMI                %prec ERROR { $$ = NULL; delete_ast_node($2); }
     // TODO:
     // | IF LP Exp Stmt      %prec LOWER_ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
@@ -136,6 +138,7 @@ Exp: Exp ASSIGN Exp                 { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $
     | Exp MUL Exp                   { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $1, $2, $3); }
     | Exp DIV Exp                   { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $1, $2, $3); }
     | LP Exp RP                     { $$ = create_nt_ast_node(AST_Exp, &@$, 3, $1, $2, $3); }
+    | PLUS Exp         %prec UPLUS  { $$ = create_nt_ast_node(AST_Exp, &@$, 2, $1, $2); }
     | MINUS Exp        %prec UMINUS { $$ = create_nt_ast_node(AST_Exp, &@$, 2, $1, $2); }
     | NOT Exp          %prec NOT    { $$ = create_nt_ast_node(AST_Exp, &@$, 2, $1, $2); }
     | ID LP Args RP                 { $$ = create_nt_ast_node(AST_Exp, &@$, 4, $1, $2, $3, $4); }
