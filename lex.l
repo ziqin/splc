@@ -91,7 +91,7 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 <BLK_COMMENT>{blk_cmmt_end}     { BEGIN prev_state; }
 <BLK_COMMENT>(.|{newline})      ;
 
-{known_err}|.   { report_lex_err(yylineno, "unknown lexeme %s\n", yytext); return LEX_ERR_BLK; }
+{known_err}|.   { report_lex_err(yylineno, "unknown lexeme %s", yytext); return LEX_ERR; }
 %%
 
 void report_lex_err(int lineno, const char * fmt, ...) {
