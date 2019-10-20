@@ -4,7 +4,8 @@
 #include "ast.h"
 #include "syntax.tab.h"
 
-int yycolno = 1;
+static int yycolno = 1;
+static int prev_state;
 
 #define YY_USER_ACTION              \
     yylloc.first_line = yylineno;   \
@@ -13,28 +14,33 @@ int yycolno = 1;
     yycolno += yyleng;              \
     yylloc.last_column = yycolno;
 
-void lex_complain(int lineno, const char * token);
+void report_lex_err(int, const char *);
+
 %}
 
 %option yylineno
+%x BLK_COMMENT
 
-digit       [0-9]
-hex         [0-9A-Fa-f]
-letter      [A-Za-z]
-whitespace  (" "|\t)
-newline     (\n|\r|\r\n)
+digit           [0-9]
+hex             [0-9A-Fa-f]
+letter          [A-Za-z]
+whitespace      (" "|\t)
+newline         (\n|\r|\r\n)
 
-INT         (0|[1-9]{digit}{0,9}|0(X|x)(0|[1-9A-Fa-f]{hex}{0,7}))
-FLOAT       {digit}+\.{digit}+
-CHAR        ('[^']'|'\\x{hex}{1,2}')
-TYPE        (int|float|char)
-ID          ({letter}|_)({letter}|{digit}|_){0,31}
-comment     "//"[^\r\n]*
+INT             (0|[1-9]{digit}{0,9}|0(X|x)(0|[1-9A-Fa-f]{hex}{0,7}))
+FLOAT           {digit}+\.{digit}+
+CHAR            ('[^']'|'\\x{hex}{1,2}')
+TYPE            (int|float|char)
+ID              ({letter}|_)({letter}|{digit}|_){0,31}
+line_cmmt       "//"[^\r\n]*
+blk_cmmt_begin  "/*"
+blk_cmmt_end    "*/"
 
 fake_dec    {digit}+
 fake_hex    0(X|x)({digit}|{letter})*
 fake_char   (''|'\\x({digit}|{letter})*')
-known_err   ({fake_dec}|{fake_hex}|{fake_char})
+fake_id     {digit}({letter}|{digit}|_)+
+known_err   ({fake_dec}|{fake_hex}|{fake_char}|{fake_id})
 
 %%
 {INT}           { yylval = create_int_ast_node(AST_INT, atoi(yytext)); return INT; }
@@ -46,7 +52,7 @@ if              { yylval = create_ast_node(AST_IF); return IF; }
 else            { yylval = create_ast_node(AST_ELSE); return ELSE; }
 while           { yylval = create_ast_node(AST_WHILE); return WHILE; }
 return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
-{ID}            { yylval = create_str_ast_node(AST_ID, yytext); return ID; }
+{ID}            { yylval = create_str_ast_node(AST_ID, yytext); return ID; }  // the order matters
 "."             { yylval = create_ast_node(AST_DOT); return DOT; }
 ";"             { yylval = create_ast_node(AST_SEMI); return SEMI; }
 ","             { yylval = create_ast_node(AST_COMMA); return COMMA; }
@@ -71,14 +77,18 @@ return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
 "{"             { yylval = create_ast_node(AST_LC); return LC; }
 "}"             { yylval = create_ast_node(AST_RC); return RC; }
 
-{whitespace}+   {}
-{comment}       {}
+{whitespace}+   ;
+{line_cmmt}     ;
 {newline}       { yycolno = 1; }  // reset
 
-{known_err}     { lex_complain(yylineno, yytext); return LEX_ERR; }
-.               { lex_complain(yylineno, yytext); return LEX_ERR; }
+{blk_cmmt_begin}            { prev_state = YYSTATE; BEGIN BLK_COMMENT; }
+<BLK_COMMENT>{blk_cmmt_end} { BEGIN prev_state; }
+<BLK_COMMENT>(.|{newline})  ;
+
+{known_err}     { report_lex_err(yylineno, yytext); return LEX_ERR; }
+.               { report_lex_err(yylineno, yytext); return LEX_ERR; }
 %%
 
-void lex_complain(int lineno, const char * token) {
-    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", lineno, token);
+void report_lex_err(int lineno, const char * lexeme) {
+    fprintf(stderr, "Error type A at Line %d: unknown lexeme %s\n", lineno, lexeme);
 }
