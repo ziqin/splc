@@ -4,7 +4,7 @@ BISON=bison
 
 TARGET=bin/splc
 
-CFLAGS=-Wall -Wno-unused-function
+CFLAGS=-std=gnu99 -Wall -Wno-unused-function
 LDFLAGS=-lfl -ly
 BISONFLAGS=-t -d -v
 
