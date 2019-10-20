@@ -30,4 +30,4 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) syntax.y
 clean:
 	@rm -rf bin/ *.yy.c *.tab.c *.tab.h *.output $(OBJECTS)
-.PHONY: splc
+.PHONY: clean
