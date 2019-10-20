@@ -1,8 +1,8 @@
-# splc
+# SPLC
 
 Sustech Programming Language Compiler
 
-## Dependencies
+## Build Dependencies
 
 - Lexer: [Flex](https://github.com/westes/flex)
 - Parser generator: [Bison](https://www.gnu.org/software/bison/)
@@ -10,12 +10,13 @@ Sustech Programming Language Compiler
 ## Try It
 
 ``` sh
+git clone https://github.com/ziqin/splc.git
 cd splc/
 make
 ./bin/splc ./test/test_1_r01.spl
 ```
 
-## References
+## References for Development
 
 - <https://www.epaperpress.com/lexandyacc/download/flex.pdf>
 - <https://www.gnu.org/software/bison/manual/bison.pdf>
