@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include "ast.h"
+#include "cst.h"
 #include "syntax.tab.h"
 
 static int yycolno = 1;
@@ -46,40 +46,40 @@ fake_id     {digit}({letter}|{digit}|_)+
 known_err   ({fake_dec}|{fake_hex}|{fake_char}|{fake_id})
 
 %%
-{INT}           { yylval = create_int_ast_node(AST_INT, atoi(yytext)); return INT; }
-{FLOAT}         { yylval = create_float_ast_node(AST_FLOAT, atof(yytext)); return FLOAT; }
-{CHAR}          { yylval = create_str_ast_node(AST_CHAR, yytext); return CHAR; }
-{TYPE}          { yylval = create_str_ast_node(AST_TYPE, yytext); return TYPE; }
-struct          { yylval = create_ast_node(AST_STRUCT); return STRUCT; }
-if              { yylval = create_ast_node(AST_IF); return IF; }
-else            { yylval = create_ast_node(AST_ELSE); return ELSE; }
-while           { yylval = create_ast_node(AST_WHILE); return WHILE; }
-for             { yylval = create_ast_node(AST_FOR); return FOR; }
-return          { yylval = create_ast_node(AST_RETURN); return RETURN; }
-{ID}            { yylval = create_str_ast_node(AST_ID, yytext); return ID; }  // the order matters
-"."             { yylval = create_ast_node(AST_DOT); return DOT; }
-";"             { yylval = create_ast_node(AST_SEMI); return SEMI; }
-","             { yylval = create_ast_node(AST_COMMA); return COMMA; }
-"="             { yylval = create_ast_node(AST_ASSIGN); return ASSIGN; }
-"<"             { yylval = create_ast_node(AST_LT); return LT; }
-"<="            { yylval = create_ast_node(AST_LE); return LE; }
-">"             { yylval = create_ast_node(AST_GT); return GT; }
-">="            { yylval = create_ast_node(AST_GE); return GE; }
-"!="            { yylval = create_ast_node(AST_NE); return NE; }
-"=="            { yylval = create_ast_node(AST_EQ); return EQ; }
-"+"             { yylval = create_ast_node(AST_PLUS); return PLUS; }
-"-"             { yylval = create_ast_node(AST_MINUS); return MINUS; }
-"*"             { yylval = create_ast_node(AST_MUL); return MUL; }
-"/"             { yylval = create_ast_node(AST_DIV); return DIV; }
-"&&"            { yylval = create_ast_node(AST_AND); return AND; }
-"||"            { yylval = create_ast_node(AST_OR); return OR; }
-"!"             { yylval = create_ast_node(AST_NOT); return NOT; }
-"("             { yylval = create_ast_node(AST_LP); return LP; }
-")"             { yylval = create_ast_node(AST_RP); return RP; }
-"["             { yylval = create_ast_node(AST_LB); return LB; }
-"]"             { yylval = create_ast_node(AST_RB); return RB; }
-"{"             { yylval = create_ast_node(AST_LC); return LC; }
-"}"             { yylval = create_ast_node(AST_RC); return RC; }
+{INT}           { yylval = create_int_cst_node(CST_INT, atoi(yytext)); return INT; }
+{FLOAT}         { yylval = create_float_cst_node(CST_FLOAT, atof(yytext)); return FLOAT; }
+{CHAR}          { yylval = create_str_cst_node(CST_CHAR, yytext); return CHAR; }
+{TYPE}          { yylval = create_str_cst_node(CST_TYPE, yytext); return TYPE; }
+struct          { yylval = create_cst_node(CST_STRUCT); return STRUCT; }
+if              { yylval = create_cst_node(CST_IF); return IF; }
+else            { yylval = create_cst_node(CST_ELSE); return ELSE; }
+while           { yylval = create_cst_node(CST_WHILE); return WHILE; }
+for             { yylval = create_cst_node(CST_FOR); return FOR; }
+return          { yylval = create_cst_node(CST_RETURN); return RETURN; }
+{ID}            { yylval = create_str_cst_node(CST_ID, yytext); return ID; }  // the order matters
+"."             { yylval = create_cst_node(CST_DOT); return DOT; }
+";"             { yylval = create_cst_node(CST_SEMI); return SEMI; }
+","             { yylval = create_cst_node(CST_COMMA); return COMMA; }
+"="             { yylval = create_cst_node(CST_ASSIGN); return ASSIGN; }
+"<"             { yylval = create_cst_node(CST_LT); return LT; }
+"<="            { yylval = create_cst_node(CST_LE); return LE; }
+">"             { yylval = create_cst_node(CST_GT); return GT; }
+">="            { yylval = create_cst_node(CST_GE); return GE; }
+"!="            { yylval = create_cst_node(CST_NE); return NE; }
+"=="            { yylval = create_cst_node(CST_EQ); return EQ; }
+"+"             { yylval = create_cst_node(CST_PLUS); return PLUS; }
+"-"             { yylval = create_cst_node(CST_MINUS); return MINUS; }
+"*"             { yylval = create_cst_node(CST_MUL); return MUL; }
+"/"             { yylval = create_cst_node(CST_DIV); return DIV; }
+"&&"            { yylval = create_cst_node(CST_AND); return AND; }
+"||"            { yylval = create_cst_node(CST_OR); return OR; }
+"!"             { yylval = create_cst_node(CST_NOT); return NOT; }
+"("             { yylval = create_cst_node(CST_LP); return LP; }
+")"             { yylval = create_cst_node(CST_RP); return RP; }
+"["             { yylval = create_cst_node(CST_LB); return LB; }
+"]"             { yylval = create_cst_node(CST_RB); return RB; }
+"{"             { yylval = create_cst_node(CST_LC); return LC; }
+"}"             { yylval = create_cst_node(CST_RC); return RC; }
 
 {whitespace}+   ;
 {line_cmmt}     ;

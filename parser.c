@@ -33,8 +33,8 @@ int main(int argc, const char ** argv) {
     freopen(target_path, "w", stderr);
 
     errno = 0;
-    ast_node_t * ast = parse_file(src_path);
-    if (!ast) // lexical/syntax error
+    cst_node_t * cst = parse_file(src_path);
+    if (!cst) // lexical/syntax error
         exit((errno & IO_ERR) ? IO_ERR : PARSING_ERR);
 
     int ret_code = 0;
@@ -43,23 +43,23 @@ int main(int argc, const char ** argv) {
         fprintf(stderr, "Failed to open file %s to write, errno=%d\n", target_path, errno);
         ret_code = IO_ERR;
     }
-    fprint_ast_node(target_file, ast, 0);
+    fprint_cst_node(target_file, cst, 0);
     fclose(target_file);
-    delete_ast_node(ast);
+    delete_cst_node(cst);
     free(target_path);
 
     return ret_code;
 }
 
 
-ast_node_t * parse_file(const char * src_path) {
-    ast_node_t * ast = NULL;
+cst_node_t * parse_file(const char * src_path) {
+    cst_node_t * cst = NULL;
     FILE * src_file = fopen(src_path, "r");
     if (src_file) {
-        ast = build_ast(src_file);
+        cst = build_cst(src_file);
     } else {
         errno |= IO_ERR;
         fprintf(stderr, "Failed to open file %s, errno=%d\n", src_path, errno);
     }
-    return ast;
+    return cst;
 }

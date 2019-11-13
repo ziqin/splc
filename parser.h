@@ -3,9 +3,9 @@
 
 // header file adapter
 #include <stdio.h>
-#include "ast.h"
+#include "cst.h"
 
-ast_node_t * build_ast(FILE *);
-ast_node_t * parse_file(const char * src_path);
+cst_node_t * build_cst(FILE *);
+cst_node_t * parse_file(const char * src_path);
 
 #endif
