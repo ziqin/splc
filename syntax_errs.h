@@ -10,6 +10,14 @@ typedef enum {
     SYNTAX_ERR_DEC_STMT_ORDER,
 } syntax_err_t;
 
-const char * syntax_err_msg(syntax_err_t err);
+
+const char * syntax_err_msgs[] = {
+    "Missing semicolon ';'",
+    "Missing closing parenthesis ')'",
+    "Missing opening parenthesis '('",
+    "Missing closing bracket ']'",
+    // "Missing closing brace '}'",
+    "Statement precede declaration",
+};
 
 #endif

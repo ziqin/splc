@@ -1,22 +1,21 @@
 %{
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include "cst.h"
-#include "syntax.tab.h"
+    #include <stdarg.h>
+    #include <stdbool.h>
+    #include <stdlib.h>
+    #include "cst.h"
+    #include "syntax.tab.h"
 
-static int yycolno = 1;
-static int prev_state;
+    static int yycolno = 1;
+    static int prev_state;
 
-#define YY_USER_ACTION              \
-    yylloc.first_line = yylineno;   \
-    yylloc.first_column = yycolno;  \
-    yylloc.last_line = yylineno;    \
-    yycolno += yyleng;              \
-    yylloc.last_column = yycolno;
+    #define YY_USER_ACTION              \
+        yylloc.first_line = yylineno;   \
+        yylloc.first_column = yycolno;  \
+        yylloc.last_line = yylineno;    \
+        yycolno += yyleng;              \
+        yylloc.last_column = yycolno;
 
-void report_lex_err(int, const char *, ...);
-
+    static void report_lex_err(int, const char *, ...);
 %}
 
 %option yylineno
@@ -94,7 +93,7 @@ return          { yylval = create_cst_node(CST_RETURN); return RETURN; }
 {known_err}|.   { report_lex_err(yylineno, "unknown lexeme %s", yytext); return LEX_ERR; }
 %%
 
-void report_lex_err(int lineno, const char * fmt, ...) {
+static void report_lex_err(int lineno, const char * fmt, ...) {
     va_list args;
     va_start(args, fmt);
     fprintf(stderr, "Error type A at Line %d: ", lineno);

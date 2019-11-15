@@ -1,33 +1,33 @@
+AR=ar
+BISON=bison
 CC=gcc
 LEX=flex
-BISON=bison
 
 TARGET=bin/splc
 
-CFLAGS=-std=gnu99 -Wall -Wno-unused-function
-LDFLAGS=-lfl -ly
 BISONFLAGS=-t -d -v
+CFLAGS=-std=gnu99 -Wall -Wno-unused-function
+LDFLAGS=-static -lfl -ly
 
-OBJECTS=parser.o lex.yy.o syntax.tab.o cst.o syntax_errs.o
 
-splc: parser.exe
-	install -D parser.exe $(TARGET)
-parser.exe: $(OBJECTS)
-	$(CC) $(CFLAGS) -o parser.exe $(OBJECTS) $(LDFLAGS)
-parser.o: parser.c parser.h cst.h
-	$(CC) $(CFLAGS) -c parser.c
+splc: main.exe
+	install -D $^ $(TARGET)
+main.exe: main.o libparser.a
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+main.o: main.c parser.h
+	$(CC) $(CFLAGS) -c $<
+libparser.a: cst.o lex.yy.o syntax.tab.o
+	$(AR) rcs $@ $^
 lex.yy.o: lex.yy.c syntax.tab.h cst.h
-	$(CC) $(CFLAGS) -c lex.yy.c
-syntax.tab.o: syntax.tab.c syntax.tab.h cst.h
-	$(CC) $(CFLAGS) -c syntax.tab.c
+	$(CC) $(CFLAGS) -c $<
+syntax.tab.o: syntax.tab.c syntax.tab.h cst.h syntax_errs.h
+	$(CC) $(CFLAGS) -c $<
 cst.o: cst.c cst.h syntax.tab.h
-	$(CC) $(CFLAGS) -c cst.c
-syntax_errs.o: syntax_errs.c syntax_errs.h
-	$(CC) $(CFLAGS) -c syntax_errs.c
+	$(CC) $(CFLAGS) -c $<
 lex.yy.c: lex.l
-	$(LEX) lex.l
+	$(LEX) $^
 syntax.tab.c syntax.tab.h: syntax.y
-	$(BISON) $(BISONFLAGS) syntax.y
+	$(BISON) $(BISONFLAGS) $^
 clean:
-	@rm -rf bin/ parser.exe *.yy.c *.tab.c *.tab.h *.output $(OBJECTS)
+	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.exe bin/
 .PHONY: clean

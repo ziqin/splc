@@ -1,16 +1,17 @@
 %{
-#include <stdbool.h>
-#include "parser.h"
-#include "syntax_errs.h"
+    #include <stdio.h>
+    #include <stdbool.h>
+    #include "cst.h"
+    #include "parser.h"
+    #include "syntax_errs.h"
 
-int yylex(void);
-void yyerror(const char *);
-void report_err(int, syntax_err_t);
+    extern int yylex(void);
+    static void yyerror(const char *);
+    static void report_syn_err(int, syntax_err_t);
 
-FILE * yyin;
-static cst_node_t * program;
-static bool has_err;
-
+    static FILE * yyin;
+    static cst_node_t * program;
+    static bool has_err;
 %}
 
 %locations
@@ -49,8 +50,8 @@ ExtDefList: ExtDef ExtDefList       { $$ = create_nt_cst_node(CST_ExtDefList, &@
 ExtDef: Specifier ExtDecList SEMI            { $$ = create_nt_cst_node(CST_ExtDef, &@$, 3, $1, $2, $3); }
     | Specifier SEMI                         { $$ = create_nt_cst_node(CST_ExtDef, &@$, 2, $1, $2); }
     | Specifier FunDec CompSt                { $$ = create_nt_cst_node(CST_ExtDef, &@$, 3, $1, $2, $3); }
-    | Specifier ExtDecList       %prec ERROR { $$ = NULL; report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
-    | Specifier                  %prec ERROR { $$ = NULL; report_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | Specifier ExtDecList       %prec ERROR { $$ = NULL; report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | Specifier                  %prec ERROR { $$ = NULL; report_syn_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
     ;
 ExtDecList: VarDec               { $$ = create_nt_cst_node(CST_ExtDecList, &@$, 1, $1); }
     | VarDec COMMA ExtDecList    { $$ = create_nt_cst_node(CST_ExtDecList, &@$, 3, $1, $2, $3); }
@@ -62,21 +63,21 @@ Specifier: TYPE                             { $$ = create_nt_cst_node(CST_Specif
     ;
 StructSpecifier: STRUCT ID LC DefList RC    { $$ = create_nt_cst_node(CST_StructSpecifier, &@$, 5, $1, $2, $3, $4, $5); }
     | STRUCT ID                             { $$ = create_nt_cst_node(CST_StructSpecifier, &@$, 2, $1, $2); }
-    // | STRUCT ID LC DefList      %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); delete_cst_node($4); report_err(@4.last_line, SYNTAX_ERR_MISSING_RC); }
+    // | STRUCT ID LC DefList      %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); delete_cst_node($4); report_syn_err(@4.last_line, SYNTAX_ERR_MISSING_RC); }
     ;
 
 /* declarator */
 VarDec: ID                      { $$ = create_nt_cst_node(CST_VarDec, &@$, 1, $1); }
     | VarDec LB INT RB          { $$ = create_nt_cst_node(CST_VarDec, &@$, 4, $1, $2, $3, $4); }
     | LEX_ERR       %prec ERROR { $$ = NULL; has_err = true; }
-    | VarDec LB INT %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
+    | VarDec LB INT %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
     ;
 FunDec: ID LP VarList RP        { $$ = create_nt_cst_node(CST_FunDec, &@$, 4, $1, $2, $3, $4); }
     | ID LP RP                  { $$ = create_nt_cst_node(CST_FunDec, &@$, 3, $1, $2, $3); }
-    | ID LP VarList %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | ID VarList RP %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
-    | ID RP         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
+    | ID LP VarList %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+    | ID LP         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    // | ID VarList RP %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
+    | ID RP         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@2.first_line, SYNTAX_ERR_MISSING_LP); }
     ;
 VarList: ParamDec COMMA VarList { $$ = create_nt_cst_node(CST_VarList, &@$, 3, $1, $2, $3); }
     | ParamDec                  { $$ = create_nt_cst_node(CST_VarList, &@$, 1, $1); }
@@ -86,11 +87,11 @@ ParamDec: Specifier VarDec      { $$ = create_nt_cst_node(CST_ParamDec, &@$, 2, 
 
 /* statement */
 CompSt: LC DefList StmtList RC              { $$ = create_nt_cst_node(CST_CompSt, &@$, 4, $1, $2, $3, $4); }
-    // | LC DefList StmtList       %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RC); }
+    // | LC DefList StmtList       %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RC); }
     ;
 StmtList: Stmt StmtList                     { $$ = create_nt_cst_node(CST_StmtList, &@$, 2, $1, $2); }
     | /* empty */                           { $$ = create_nt_cst_node(CST_StmtList, &@$, 0); }
-    | Stmt Def StmtList         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER); }
+    | Stmt Def StmtList         %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER); }
     ;
 Stmt: Exp SEMI                              { $$ = create_nt_cst_node(CST_Stmt, &@$, 2, $1, $2); }
     | CompSt                                { $$ = create_nt_cst_node(CST_Stmt, &@$, 1, $1); }
@@ -106,14 +107,14 @@ Stmt: Exp SEMI                              { $$ = create_nt_cst_node(CST_Stmt, 
     | FOR LP Exp SEMI SEMI Exp RP Stmt      { $$ = create_nt_cst_node(CST_Stmt, &@$, 9, $1, $2, $3, $4, NULL, $5, $6, $7, $8); }
     | FOR LP SEMI Exp SEMI Exp RP Stmt      { $$ = create_nt_cst_node(CST_Stmt, &@$, 9, $1, $2, NULL, $3, $4, $5, $6, $7, $8); }
     | FOR LP Exp SEMI Exp SEMI Exp RP Stmt  { $$ = create_nt_cst_node(CST_Stmt, &@$, 9, $1, $2, $3, $4, $5, $6, $7, $8, $9); }
-    | Exp                       %prec ERROR { $$ = NULL; delete_cst_node($1); report_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
-    | RETURN Exp                %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | Exp                       %prec ERROR { $$ = NULL; delete_cst_node($1); report_syn_err(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
+    | RETURN Exp                %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
     | LEX_ERR_BLK               %prec ERROR { $$ = NULL; has_err = true; }
     | error SEMI                %prec ERROR { $$ = NULL; delete_cst_node($2); }
     // TODO:
-    // | IF LP Exp Stmt      %prec LOWER_ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | IF LP Exp Stmt ELSE Stmt  %prec ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | WHILE LP Exp Stmt         %prec ERROR { $$ = NULL; report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+    // | IF LP Exp Stmt      %prec LOWER_ERROR { $$ = NULL; report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+    // | IF LP Exp Stmt ELSE Stmt  %prec ERROR { $$ = NULL; report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+    // | WHILE LP Exp Stmt         %prec ERROR { $$ = NULL; report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
     ;
 
 /* local definition */
@@ -122,7 +123,7 @@ DefList: Def DefList            { $$ = create_nt_cst_node(CST_DefList, &@$, 2, $
     ;
 Def: Specifier DecList SEMI               { $$ = create_nt_cst_node(CST_Def, &@$, 3, $1, $2, $3); }
     | Specifier DecList       %prec ERROR { $$ = NULL; delete_cst_node($1); delete_cst_node($2); 
-                                            report_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+                                            report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
     ;
 DecList: Dec                    { $$ = create_nt_cst_node(CST_DecList, &@$, 1, $1); }
     | Dec COMMA DecList         { $$ = create_nt_cst_node(CST_DecList, &@$, 3, $1, $2, $3); }
@@ -159,14 +160,14 @@ Exp: Exp ASSIGN Exp                 { $$ = create_nt_cst_node(CST_Exp, &@$, 3, $
     | CHAR                          { $$ = create_nt_cst_node(CST_Exp, &@$, 1, $1); }
     | LEX_ERR                       { $$ = NULL; has_err = true; }
     | Exp LEX_ERR Exp  %prec ERROR  { $$ = NULL; has_err = true; }
-    | LP Exp           %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP Args       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP            %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    | Exp LB Exp       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
+    | LP Exp           %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    | ID LP Args       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+    | ID LP            %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@2.last_line, SYNTAX_ERR_MISSING_RP); }
+    | Exp LB Exp       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@3.last_line, SYNTAX_ERR_MISSING_RB); }
     // TODO:
-    // | Exp RP           %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@1.first_line, SYNTAX_ERR_MISSING_LP); }
-    // | ID Args RP       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
-    // | ID RP            %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
+    // | Exp RP           %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@1.first_line, SYNTAX_ERR_MISSING_LP); }
+    // | ID Args RP       %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); delete_cst_node($3); report_syn_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
+    // | ID RP            %prec ERROR  { $$ = NULL; delete_cst_node($1); delete_cst_node($2); report_syn_err(@1.last_line, SYNTAX_ERR_MISSING_LP); }
     ;
 
 Args: Exp COMMA Args    %prec ARGS { $$ = create_nt_cst_node(CST_Args, &@$, 3, $1, $2, $3); }
@@ -175,16 +176,17 @@ Args: Exp COMMA Args    %prec ARGS { $$ = create_nt_cst_node(CST_Args, &@$, 3, $
 
 %%
 
-void yyerror(const char * msg) {
+static void yyerror(const char * msg) {
     fprintf(stderr, "Error type B at Line %d: %s\n", yylloc.last_line, msg);
-}
-
-void report_err(int lineno, syntax_err_t err) {
-    fprintf(stderr, "Error type B at Line %d: %s\n", lineno, syntax_err_msg(err));
     has_err = true;
 }
 
-cst_node_t * build_cst(FILE * file) {
+static void report_syn_err(int lineno, syntax_err_t err) {
+    fprintf(stderr, "Error type B at Line %d: %s\n", lineno, syntax_err_msgs[err]);
+    has_err = true;
+}
+
+cst_node_t * parse_file(FILE * file) {
     // yydebug = 1;
     has_err = false;
     yyin = file;

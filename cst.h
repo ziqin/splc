@@ -1,8 +1,6 @@
 #ifndef CST_H
 #define CST_H
 
-#include <stdarg.h>
-#include <stdio.h>
 
 typedef enum {
     CST_INT,
@@ -87,6 +85,8 @@ typedef struct {
 } nt_cst_node_t;
 
 struct YYLTYPE;
+struct FILE;
+
 
 cst_node_t * create_cst_node(cst_type_name);
 cst_node_t * create_int_cst_node(cst_type_name, int);

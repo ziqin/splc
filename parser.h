@@ -1,11 +1,11 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-// header file adapter
-#include <stdio.h>
-#include "cst.h"
+// header file for libparser.a
 
-cst_node_t * build_cst(FILE *);
-cst_node_t * parse_file(const char * src_path);
+struct FILE;
+struct cst_node_t;
+
+cst_node_t * parse_file(FILE *);
 
 #endif
