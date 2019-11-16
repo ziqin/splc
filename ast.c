@@ -28,7 +28,7 @@ ast_node_t * create_float_ast_node(ast_type_name type, float val) {
 
 
 ast_node_t * create_str_ast_node(ast_type_name type, const char * val) {
-    str_ast_node_t * node = (str_ast_node_t*)malloc(sizeof(ast_node_t));
+    str_ast_node_t * node = (str_ast_node_t*)malloc(sizeof(str_ast_node_t));
     node->proto.node_type = type;
     node->value = strdup(val);  // need to free
     return (ast_node_t*)node;
