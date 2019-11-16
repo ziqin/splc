@@ -1,14 +1,12 @@
 #ifndef DICT_H
 #define DICT_H
 
-typedef void * T;
-
-struct avl_node_t {
+typedef struct avl_node_t {
     char * key;
-    T val;
+    void * val;
     struct avl_node_t * left, * right;
     int height;
-};
+} avl_node_t;
 
 typedef struct dict_t {
     struct avl_node_t * root;
@@ -17,9 +15,10 @@ typedef struct dict_t {
 
 dict_t create_dict(void);
 void clear_dict(dict_t * dict);
-struct avl_node_t * dict_add(dict_t * dict, const char * key, T value);
+struct avl_node_t * dict_add(dict_t * dict, const char * key, void * value);
 struct avl_node_t * dict_get(dict_t dict, const char * key);
-void dict_set(dict_t * dict, const char * key, T value);
+void dict_set(dict_t * dict, const char * key, void * value);
 void dict_delete(dict_t * dict, const char * key);
+void dict_for_each(dict_t * tree, void (*action)(void *));
 
 #endif

@@ -12,8 +12,8 @@ struct dict_t create_dict(void) {
     return tree;
 }
 
-inline static struct avl_node_t * _create_avl_node(const char * key, T value) {
-    struct avl_node_t * new_node = malloc(sizeof(struct avl_node_t));
+inline static avl_node_t * _create_avl_node(const char * key, void * value) {
+    avl_node_t * new_node = malloc(sizeof(avl_node_t));
     assert(new_node != NULL);
     new_node->key = strdup(key);
     new_node->val = value;
@@ -22,12 +22,12 @@ inline static struct avl_node_t * _create_avl_node(const char * key, T value) {
     return new_node;
 }
 
-inline static void _destroy_avl_node(struct avl_node_t * node) {
+inline static void _destroy_avl_node(avl_node_t * node) {
     free(node->key);
     free(node);
 }
 
-void _destroy_dict(struct avl_node_t * tree) {
+void _destroy_dict(avl_node_t * tree) {
     assert(tree != NULL);
     if (tree->left != NULL) _destroy_dict(tree->left);
     if (tree->right != NULL) _destroy_dict(tree->right);
@@ -42,14 +42,14 @@ void clear_dict(dict_t * tree) {
 
 #define _AVL_HEIGHT(tree) ((tree) ? (tree)->height : -1)
 
-inline static void _avl_update_height(struct avl_node_t * tree) { // tree != NULL
+inline static void _avl_update_height(avl_node_t * tree) { // tree != NULL
     int left_height = _AVL_HEIGHT(tree->left);
     int right_height = _AVL_HEIGHT(tree->right);
     tree->height = (left_height > right_height ? left_height : right_height) + 1;
 }
 
-inline static struct avl_node_t * _avl_left_rotate(struct avl_node_t * tree) {
-    struct avl_node_t * rotated = tree->right;
+inline static avl_node_t * _avl_left_rotate(avl_node_t * tree) {
+    avl_node_t * rotated = tree->right;
     tree->right = rotated->left;
     _avl_update_height(tree);
     rotated->left = tree;
@@ -57,8 +57,8 @@ inline static struct avl_node_t * _avl_left_rotate(struct avl_node_t * tree) {
     return rotated;
 }
 
-inline static struct avl_node_t * _avl_right_rotate(struct avl_node_t * tree) {
-    struct avl_node_t * rotated = tree->left;
+inline static avl_node_t * _avl_right_rotate(avl_node_t * tree) {
+    avl_node_t * rotated = tree->left;
     tree->left = rotated->right;
     _avl_update_height(tree);
     rotated->right = tree;
@@ -66,9 +66,9 @@ inline static struct avl_node_t * _avl_right_rotate(struct avl_node_t * tree) {
     return rotated;
 }
 
-static struct avl_node_t * _avl_maintain(struct avl_node_t * tree) {
+static avl_node_t * _avl_maintain(avl_node_t * tree) {
     _avl_update_height(tree);
-    struct avl_node_t * left = tree->left, * right = tree->right;
+    avl_node_t * left = tree->left, * right = tree->right;
     if (_AVL_HEIGHT(left) > _AVL_HEIGHT(right) + 1) {
         if (_AVL_HEIGHT(left->left) >= _AVL_HEIGHT(left->right)) {
             return _avl_right_rotate(tree);
@@ -88,7 +88,7 @@ static struct avl_node_t * _avl_maintain(struct avl_node_t * tree) {
     }
 }
 
-static struct avl_node_t * _avl_insert(struct avl_node_t * tree, struct avl_node_t * node, unsigned * size) {
+static avl_node_t * _avl_insert(avl_node_t * tree, avl_node_t * node, unsigned * size) {
     int cmp = strcmp(node->key, tree->key);
     if (cmp < 0) {
         if (tree->left != NULL) {
@@ -110,7 +110,7 @@ static struct avl_node_t * _avl_insert(struct avl_node_t * tree, struct avl_node
     return tree = _avl_maintain(tree);
 }
 
-static struct avl_node_t * _avl_min(struct avl_node_t * tree) {
+static avl_node_t * _avl_min(avl_node_t * tree) {
     assert(tree != NULL);
     while (tree->left != NULL)
         tree = tree->left;
@@ -118,7 +118,7 @@ static struct avl_node_t * _avl_min(struct avl_node_t * tree) {
 }
 
 /** Note that min node is not deleted using free() intentionally */
-static struct avl_node_t * _avl_exclude_min(struct avl_node_t * tree) {
+static avl_node_t * _avl_exclude_min(avl_node_t * tree) {
     assert(tree != NULL);
     if (tree->left == NULL) { // current node excluded but not deleted
         tree = tree->right;
@@ -131,7 +131,7 @@ static struct avl_node_t * _avl_exclude_min(struct avl_node_t * tree) {
 }
 
 // Reference: Algorithms (4th ed.) by R. Sedgewick & K. Wayne
-static struct avl_node_t * _avl_delete(struct avl_node_t * tree, const char * key) {
+static avl_node_t * _avl_delete(avl_node_t * tree, const char * key) {
     // if (tree == NULL) return NULL;  // nothing deleted
     assert(tree != NULL);  // inexistent key causes an assertion error
     int cmp = strcmp(key, tree->key);
@@ -142,7 +142,7 @@ static struct avl_node_t * _avl_delete(struct avl_node_t * tree, const char * ke
         tree->right = _avl_delete(tree->right, key);
         tree = _avl_maintain(tree);
     } else { // delete current node
-        struct avl_node_t * current = tree;
+        avl_node_t * current = tree;
         if (current->right == NULL) {
             tree = current->left;
         } else if (current->left == NULL) {
@@ -158,14 +158,21 @@ static struct avl_node_t * _avl_delete(struct avl_node_t * tree, const char * ke
     return tree;
 }
 
+/** Perform in-order tranversal */
+static void _avl_for_each(avl_node_t * tree, void (*action)(void *)) {
+    if (tree->left != NULL) _avl_for_each(tree->left, action);
+    action(tree->val);
+    if (tree->right != NULL) _avl_for_each(tree->right, action);
+}
+
 /**
  * Returns the address of inserted node, or NULL if tree already contains the same key
  * When duplicate, values won't be updated
  */
-struct avl_node_t * dict_add(dict_t * tree, const char * key, T value) {
+avl_node_t * dict_add(dict_t * tree, const char * key, void * value) {
     assert(tree != NULL);
     // create a new node
-    struct avl_node_t * new_node = _create_avl_node(key, value);
+    avl_node_t * new_node = _create_avl_node(key, value);
     // insert
     if (tree->root == NULL) {
         tree->size = 1;
@@ -179,8 +186,8 @@ struct avl_node_t * dict_add(dict_t * tree, const char * key, T value) {
 }
 
 /** Returns the address of a node with given key, or NULL if not found */
-struct avl_node_t * dict_get(dict_t tree, const char * key) {
-    struct avl_node_t * cursor = tree.root;
+avl_node_t * dict_get(dict_t tree, const char * key) {
+    avl_node_t * cursor = tree.root;
     while (cursor != NULL) {
         int cmp = strcmp(key, cursor->key);
         if (cmp < 0) cursor = cursor->left;
@@ -190,8 +197,8 @@ struct avl_node_t * dict_get(dict_t tree, const char * key) {
     return cursor;
 }
 
-void dict_set(dict_t * tree, const char * key, T value) {
-    struct avl_node_t * cursor = dict_get(*tree, key);
+void dict_set(dict_t * tree, const char * key, void * value) {
+    avl_node_t * cursor = dict_get(*tree, key);
     if (cursor) {
         cursor->val = value;
     } else {
@@ -204,4 +211,8 @@ void dict_delete(dict_t * tree, const char * key) {
     assert(tree != NULL);
     tree->root = _avl_delete(tree->root, key);
     tree->size--;
+}
+
+void dict_for_each(dict_t * tree, void (*action)(void *)) {
+    if (tree->root != NULL) _avl_for_each(tree->root, action);
 }

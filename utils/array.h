@@ -12,7 +12,7 @@ struct T##_array_t {                                                            
     unsigned capacity;                                                          \
 };                                                                              \
                                                                                 \
-static struct T##_array_t create_array_##T(int length, int capacity) {          \
+static struct T##_array_t create_array_##T(unsigned length, unsigned capacity) {\
     assert(capacity > 0);                                                       \
     struct T##_array_t arr;                                                     \
     arr.addr = malloc(capacity * sizeof(T));                                    \
