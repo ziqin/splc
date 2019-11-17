@@ -1,5 +1,5 @@
-#ifndef DICT_H
-#define DICT_H
+#ifndef UTILS_DICT_H
+#define UTILS_DICT_H
 
 typedef struct avl_node_t {
     char * key;

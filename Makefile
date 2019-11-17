@@ -5,16 +5,16 @@ LEX=flex
 
 
 BISONFLAGS=-t -d -v
-CFLAGS=-std=gnu99 -Wall -Wno-unused-function
-LDFLAGS=-static -lfl -ly
+CFLAGS=-std=gnu99 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
+LDFLAGS=-static -lfl -ly -Wl,--gc-sections
 
 # installation
 splc: install # CS323 project requirement adaptation
-install: main.exe
+install: main.elf
 	install -D $^ bin/splc
 
 # command line interface
-main.exe: main.o libparser.a libsementic.a
+main.elf: main.o libparser.a libsementic.a
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 main.o: main.c parser.h
 	$(CC) $(CFLAGS) -c $<
@@ -34,8 +34,10 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) $^
 
 # semantic analysis
-libsementic.a: symbol_table.o type.o dict.o
+libsementic.a: ast.o symbol_table.o type.o dict.o
 	$(AR) rcs $@ $^
+ast.o: ast.c ast.h
+	$(CC) $(CFLAGS) -c $<
 symbol_table.o: symbol_table.c symbol_table.h
 	$(CC) $(CFLAGS) -c $<
 type.o: type.c type.h utils/array.h
@@ -44,5 +46,5 @@ dict.o: utils/dict.c utils/dict.h
 	$(CC) $(CFLAGS) -c $<
 
 clean:
-	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.exe bin/
+	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/
 .PHONY: splc clean

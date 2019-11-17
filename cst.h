@@ -1,6 +1,8 @@
 #ifndef CST_H
 #define CST_H
 
+#include <stdio.h>
+
 
 typedef enum {
     CST_INT,
@@ -63,29 +65,28 @@ typedef struct cst_node_t {
 } cst_node_t;
 
 typedef struct {
-    cst_node_t proto;
+    cst_node_t base;
     int value;
 } int_cst_node_t;
 
 typedef struct {
-    cst_node_t proto;
+    cst_node_t base;
     float value;
 } float_cst_node_t;
 
 typedef struct {
-    cst_node_t proto;
+    cst_node_t base;
     char * value;
 } str_cst_node_t;
 
 // nonterminal
 typedef struct {
-    cst_node_t proto;
+    cst_node_t base;
     int first_line;
     int length;
 } nt_cst_node_t;
 
 struct YYLTYPE;
-struct FILE;
 
 
 cst_node_t * create_cst_node(cst_type_name);

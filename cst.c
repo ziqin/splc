@@ -1,37 +1,37 @@
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "cst.h"
 #include "syntax.tab.h"
+#include "utils/new.h"
 
 
 cst_node_t * create_cst_node(cst_type_name type) {
-    cst_node_t * node = (cst_node_t*)malloc(sizeof(cst_node_t));
+    cst_node_t * node = NEW(cst_node_t);
     node->node_type = type;
     return node;
 }
 
 
 cst_node_t * create_int_cst_node(cst_type_name type, int val) {
-    int_cst_node_t * node = (int_cst_node_t*)malloc(sizeof(int_cst_node_t));
-    node->proto.node_type = type;
+    int_cst_node_t * node = NEW(int_cst_node_t);
+    node->base.node_type = type;
     node->value = val;
     return (cst_node_t*)node;
 }
 
 
 cst_node_t * create_float_cst_node(cst_type_name type, float val) {
-    float_cst_node_t * node = (float_cst_node_t*)malloc(sizeof(float_cst_node_t));
-    node->proto.node_type = type;
+    float_cst_node_t * node = NEW(float_cst_node_t);
+    node->base.node_type = type;
     node->value = val;
     return (cst_node_t*)node;
 }
 
 
 cst_node_t * create_str_cst_node(cst_type_name type, const char * val) {
-    str_cst_node_t * node = (str_cst_node_t*)malloc(sizeof(str_cst_node_t));
-    node->proto.node_type = type;
+    str_cst_node_t * node = NEW(str_cst_node_t);
+    node->base.node_type = type;
     node->value = strdup(val);  // need to free
     return (cst_node_t*)node;
 }
@@ -39,7 +39,7 @@ cst_node_t * create_str_cst_node(cst_type_name type, const char * val) {
 
 cst_node_t * create_nt_cst_node(cst_type_name type, const struct YYLTYPE * loc, int count, ...) {
     nt_cst_node_t * node = (nt_cst_node_t *)malloc(sizeof(nt_cst_node_t) + count * sizeof(cst_node_t *));
-    node->proto.node_type = type;
+    node->base.node_type = type;
     node->first_line = loc->first_line;
     node->length = count;
     cst_node_t ** children = (cst_node_t **)(node + 1);
@@ -181,7 +181,7 @@ void fprint_cst_node(FILE * fp, const cst_node_t * node, int indent) {
         nt_cst_node_t * nt_node = (nt_cst_node_t *)node;
         if (nt_node->length > 0) {
             for (int i = 0; i < indent; ++i) fputc(' ', fp);
-            fprintf(fp, "%s (%d)\n", cst_type2name[nt_node->proto.node_type], nt_node->first_line);
+            fprintf(fp, "%s (%d)\n", cst_type2name[nt_node->base.node_type], nt_node->first_line);
             cst_node_t ** children = (cst_node_t **)(nt_node + 1);
             for (int i = 0; i < nt_node->length; ++i)
                 fprint_cst_node(fp, children[i], indent+2);

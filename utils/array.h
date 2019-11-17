@@ -1,5 +1,5 @@
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef UTILS_ARRAY_H
+#define UTILS_ARRAY_H
 
 #include <assert.h>
 #include <stdlib.h>
@@ -15,7 +15,7 @@ struct T##_array_t {                                                            
 static struct T##_array_t create_array_##T(unsigned length, unsigned capacity) {\
     assert(capacity > 0);                                                       \
     struct T##_array_t arr;                                                     \
-    arr.addr = malloc(capacity * sizeof(T));                                    \
+    arr.addr = (T *) malloc(capacity * sizeof(T));                              \
     if (arr.addr == NULL) {                                                     \
         arr.length = arr.capacity = 0;                                          \
     } else {                                                                    \
@@ -37,9 +37,9 @@ static void delete_array_##T(struct T##_array_t * arr) {                        
 static void append_##T(struct T##_array_t * arr, T val) {                       \
     assert(arr != NULL);                                                        \
     if (arr->length >= arr->capacity) {                                         \
-        T * new_addr = realloc(arr->addr, sizeof(T) * (arr->capacity * 2));     \
-        assert(new_addr != NULL);                                               \
-        arr->addr = new_addr;                                                   \
+        T * fresh = (T *) realloc(arr->addr, sizeof(T) * (arr->capacity * 2));  \
+        assert(fresh != NULL);                                                  \
+        arr->addr = fresh;                                                      \
         arr->capacity = arr->capacity * 2;                                      \
     }                                                                           \
     arr->addr[arr->length++] = val;                                             \
@@ -50,7 +50,7 @@ static T pop_##T(struct T##_array_t * arr) {                                    
     T ans = arr->addr[--(arr->length)];                                         \
     if (arr->length < arr->capacity / 2) {                                      \
         arr->capacity /= 2;                                                     \
-        arr->addr = realloc(arr->addr, sizeof(T) * arr->capacity);              \
+        arr->addr = (T *) realloc(arr->addr, sizeof(T) * arr->capacity);        \
         assert(arr->addr != NULL);                                              \
     }                                                                           \
     return ans;                                                                 \

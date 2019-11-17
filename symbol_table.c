@@ -1,11 +1,11 @@
 #include <assert.h>
-#include <stdlib.h>
 #include "symbol_table.h"
 #include "type.h"
+#include "utils/new.h"
 
 
 symbol_table_t * create_symbol_table(symbol_table_t * parent) {
-    symbol_table_t * table = (symbol_table_t *) malloc(sizeof(symbol_table_t));
+    symbol_table_t * table = NEW(symbol_table_t);
     table->dict = create_dict();
     table->parent = parent;
     return table;

@@ -1,9 +1,9 @@
 /** String-Key Dictionary Based on AVL Balanced Binary Search Tree */
 
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 #include "dict.h"
+#include "new.h"
 
 struct dict_t create_dict(void) {
     struct dict_t tree;
@@ -13,7 +13,7 @@ struct dict_t create_dict(void) {
 }
 
 inline static avl_node_t * _create_avl_node(const char * key, void * value) {
-    avl_node_t * new_node = malloc(sizeof(avl_node_t));
+    avl_node_t * new_node = NEW(avl_node_t);
     assert(new_node != NULL);
     new_node->key = strdup(key);
     new_node->val = value;
