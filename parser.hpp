@@ -3,9 +3,8 @@
 
 // header file for libparser.a
 
-struct FILE;
-struct cst_node_t;
+#include <cstdio>
 
-cst_node_t * parse_file(FILE *);
+CST::Node * parseFile(FILE *);
 
 #endif

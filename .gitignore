@@ -18,8 +18,8 @@
 
 # Generated Source Code
 *.yy.c
-*.tab.c
-*.tab.h
+*.cc
+*.hh
 
 # Libraries
 *.lib
@@ -60,3 +60,6 @@ dkms.conf
 # IDEs / editors
 .idea/
 .vscode/
+*.yy.c
+*.tab.c
+*.tab.h

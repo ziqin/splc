@@ -8,10 +8,10 @@ typedef enum {
     SYNTAX_ERR_MISSING_RB,
     // SYNTAX_ERR_MISSING_RC,
     SYNTAX_ERR_DEC_STMT_ORDER,
-} syntax_err_t;
+} SyntaxErr;
 
 
-const char * syntax_err_msgs[] = {
+const char * syntaxErrMsgs[] = {
     "Missing semicolon ';'",
     "Missing closing parenthesis ')'",
     "Missing opening parenthesis '('",
