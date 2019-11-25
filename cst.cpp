@@ -29,11 +29,11 @@ void CST::Node::fprint(FILE * fp, int indent) {
 }
 
 CST::CharNode::CharNode(const char * val): CST::Node(CST::CHAR) {
-    if (val[0] != '\\') {
-        value = val[0];
+    if (val[1] != '\\') {
+        value = val[1];
     } else { // starts with \x
         value = 0;
-        for (const char * hex = val + 2; *hex != '\0'; ++hex) {
+        for (const char * hex = val + 3; *hex != '\''; ++hex) {
             value <<= 4;
             if ('0' <= *hex && *hex <= '9') {
                 value += *hex - '0';
