@@ -8,7 +8,7 @@
     static void yyerror(const char *);
     static void reportSynErr(int, SyntaxErr);
 
-    static FILE * yyin;
+    extern FILE * yyin;
     static CST::Node * program;
     static bool hasErr;
 %}
