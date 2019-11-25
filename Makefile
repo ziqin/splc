@@ -42,5 +42,9 @@ type.o: type.cpp type.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
-	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/
-.PHONY: splc clean
+	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/ test/*.out
+
+test: install
+	cd test && ./diff_test.py
+
+.PHONY: splc clean test

@@ -2,7 +2,7 @@
 
 Sustech Programming Language Compiler
 
-[![Build Status](https://github.com/ziqin/splc/workflows/C%2FC%2B%2B%20CI/badge.svg)](https://github.com/ziqin/splc/actions)
+[![Build Status](https://github.com/ziqin/splc/workflows/CI/badge.svg)](https://github.com/ziqin/splc/actions)
 
 ## Build Dependencies
 

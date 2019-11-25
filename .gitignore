@@ -63,3 +63,6 @@ dkms.conf
 *.yy.c
 *.tab.c
 *.tab.h
+
+# program outputs
+*.out
