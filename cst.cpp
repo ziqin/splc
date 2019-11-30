@@ -48,7 +48,7 @@ CST::CharNode::CharNode(const char * val): CST::Node(CST::CHAR) {
 
 void CST::CharNode::fprint(FILE * fp, int indent) {
     fprintIndent(fp, indent);
-    std::fprintf(fp, "%s: %c\n", cstTypeToName[nodeType], value);
+    std::fprintf(fp, "%s: '%c'\n", cstTypeToName[nodeType], value);
 }
 
 CST::IntNode::IntNode(const char * val):
@@ -92,7 +92,7 @@ void CST::NtNode::fprint(FILE * fp, int indent) {
         fprintIndent(fp, indent);
         std::fprintf(fp, "%s (%d)\n", cstTypeToName[nodeType], first_line);
         for (auto child: children) {
-            child->fprint(fp, indent + 2);
+            if (child) child->fprint(fp, indent + 2);
         }
     }
 }
