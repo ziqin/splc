@@ -48,7 +48,11 @@ CST::CharNode::CharNode(const char * val): CST::Node(CST::CHAR) {
 
 void CST::CharNode::fprint(FILE * fp, int indent) {
     fprintIndent(fp, indent);
-    std::fprintf(fp, "%s: '%c'\n", cstTypeToName[nodeType], value);
+    if (0x20 <= value && value <= 0x7f) {
+        std::fprintf(fp, "%s: '%c'\n", cstTypeToName[nodeType], value);
+    } else {
+        std::fprintf(fp, "%s: '\\x%02X'\n", cstTypeToName[nodeType], value);
+    }
 }
 
 CST::IntNode::IntNode(const char * val):

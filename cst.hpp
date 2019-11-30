@@ -75,7 +75,7 @@ struct Node {
 };
 
 struct CharNode: public Node {
-    char value;
+    unsigned char value;
     CharNode(const char * val);
     void fprint(FILE * fp, int indent);
 };
