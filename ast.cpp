@@ -23,7 +23,7 @@ ExpPtr Exp::createExp(const CST::Node& node) {
     case CST::FLOAT:
         return ExpPtr(new LiteralExp(node));
     case CST::Exp: {
-        auto ntNode = dynamic_cast<const CST::NtNode&>(node);
+        auto& ntNode = dynamic_cast<const CST::NtNode&>(node);
         switch (ntNode.children.size()) {
         case 1:
             return createExp(*ntNode.children[0]);
@@ -112,7 +112,7 @@ AssignExp::AssignExp(const CST::NtNode& node):
 {}
 
 CallExp::CallExp(const CST::NtNode& node):
-    callee(new IdExp(dynamic_cast<CST::StrNode&>(*node.children[0])))
+    callee(new IdExp(dynamic_cast<const CST::StrNode&>(*node.children[0])))
 {
     if (node.children.size() == 4) {
         const CST::NtNode * args;
@@ -134,7 +134,7 @@ using StmtPtr = unique_ptr<Stmt>;
 StmtPtr Stmt::createStmt(const CST::NtNode& node) {
     switch (node.children[0]->nodeType) {
     case CST::Exp:      return StmtPtr(new ExpStmt(node));
-    case CST::CompSt:   return StmtPtr(new ComplexStmt(dynamic_cast<CST::NtNode&>(*node.children[0])));
+    case CST::CompSt:   return StmtPtr(new ComplexStmt(dynamic_cast<const CST::NtNode&>(*node.children[0])));
     case CST::RETURN:   return StmtPtr(new ReturnStmt(node));
     case CST::IF:       return StmtPtr(new IfStmt(node));
     case CST::WHILE:    return StmtPtr(new WhileStmt(node));
@@ -217,9 +217,9 @@ ComplexStmt::ComplexStmt(const CST::NtNode& node) {
     definitions = createDefs(dynamic_cast<const CST::NtNode&>(*node.children[1]));
 
     // StmtList
-    for (auto list = dynamic_cast<CST::NtNode*>(node.children[2]);
+    for (auto list = dynamic_cast<const CST::NtNode*>(node.children[2]);
          list->nodeType == CST::StmtList && list->children.size() == 2;
-         list = dynamic_cast<CST::NtNode*>(list->children[1])
+         list = dynamic_cast<const CST::NtNode*>(list->children[1])
     ) {
         body.push_back(createStmt(dynamic_cast<const CST::NtNode&>(*list->children[0])));
     }
@@ -264,7 +264,7 @@ static vector<unique_ptr<VarDef>> decList2varDefs(shared_ptr<Type> type, const C
          list->nodeType == CST::DecList && list->children.size() == 3;
          list = dynamic_cast<const CST::NtNode*>(list->children[2])
     ) {
-        varDefs.push_back(dec2varDef(type, dynamic_cast<CST::NtNode&>(*list->children[0])));
+        varDefs.push_back(dec2varDef(type, dynamic_cast<const CST::NtNode&>(*list->children[0])));
     }
     varDefs.push_back(dec2varDef(type, dynamic_cast<const CST::NtNode&>(*list->children[0])));
     return varDefs;
@@ -276,16 +276,16 @@ static shared_ptr<Type> specifier2type(const CST::NtNode& node);
 static vector<unique_ptr<VarDef>> createDefs(const CST::NtNode& node) {
     vector<unique_ptr<VarDef>> definitions;
     if (node.nodeType == CST::Def) {
-        shared_ptr<Type> type = specifier2type(dynamic_cast<CST::NtNode&>(*node.children[0]));
-        auto varDefs = decList2varDefs(type, dynamic_cast<CST::NtNode&>(*node.children[1]));
+        shared_ptr<Type> type = specifier2type(dynamic_cast<const CST::NtNode&>(*node.children[0]));
+        auto varDefs = decList2varDefs(type, dynamic_cast<const CST::NtNode&>(*node.children[1]));
         definitions.reserve(varDefs.size());
         move(varDefs.begin(), varDefs.end(), back_inserter(definitions));
     } else if (node.nodeType == CST::DefList) {
         for (auto defList = &node;
              defList->children.size() == 2;
-             defList = dynamic_cast<CST::NtNode*>(defList->children[1])
+             defList = dynamic_cast<const CST::NtNode*>(defList->children[1])
         ) {
-            auto defs = createDefs(dynamic_cast<CST::NtNode&>(*defList->children[0]));
+            auto defs = createDefs(dynamic_cast<const CST::NtNode&>(*defList->children[0]));
             definitions.reserve(defs.size() + definitions.size());
             move(defs.begin(), defs.end(), back_inserter(definitions));
         }
@@ -294,8 +294,9 @@ static vector<unique_ptr<VarDef>> createDefs(const CST::NtNode& node) {
 }
 
 static shared_ptr<Type> specifier2type(const CST::NtNode& node) {
-    if (node.nodeType == CST::TYPE) {
-        auto typeNode = dynamic_cast<const CST::StrNode&>(node);
+    assert(node.nodeType == CST::Specifier);
+    if (node.children[0]->nodeType == CST::TYPE) {
+        auto& typeNode = dynamic_cast<const CST::StrNode&>(*node.children[0]);
         if (typeNode.value == "char") {
             return shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR));
         } else if (typeNode.value == "int") {
@@ -305,14 +306,14 @@ static shared_ptr<Type> specifier2type(const CST::NtNode& node) {
         } else {
             throw invalid_argument(invalidCstNodeType);
         }
-    } else {
-        assert(node.nodeType == CST::StructSpecifier);
-        string structName = dynamic_cast<const CST::StrNode&>(*node.children[1]).value;
-        if (node.children.size() == 2) {
+    } else if (node.children[0]->nodeType == CST::StructSpecifier) {
+        const CST::NtNode& child = dynamic_cast<const CST::NtNode&>(*node.children[0]);
+        string structName = dynamic_cast<const CST::StrNode&>(*child.children[1]).value;
+        if (child.children.size() == 2) {
             return shared_ptr<Type>(new TypeAlias(structName, nullptr));
-        } else if (node.children.size() == 5) {
+        } else if (child.children.size() == 5) {
             StructType * structType = new StructType;
-            auto defList = createDefs(dynamic_cast<CST::NtNode&>(*node.children[3]));
+            auto defList = createDefs(dynamic_cast<const CST::NtNode&>(*child.children[3]));
             for (auto& def: defList) {
                 structType->fields.push_back(make_pair(move(def->type), def->identifier));
             }
@@ -320,6 +321,8 @@ static shared_ptr<Type> specifier2type(const CST::NtNode& node) {
         } else {
             throw invalid_argument(invalidCstNodeType);
         }
+    } else {
+        throw invalid_argument(invalidCstNodeType);
     }
 }
 
@@ -338,30 +341,32 @@ StructDef::StructDef(const CST::NtNode& node) {
 }
 
 FunctionDef::FunctionDef(const CST::NtNode& node) {
-    assert(node.nodeType == CST::ExtDef && node.children[1]->nodeType == CST::FunDec);
-    type = specifier2type(dynamic_cast<CST::NtNode&>(*node.children[0]));
-    auto declarator = dynamic_cast<CST::NtNode&>(*node.children[1]);
-    identifier = dynamic_cast<CST::StrNode&>(*declarator.children[0]).value;
+    assert(node.nodeType == CST::ExtDef && node.children.size() == 3 && node.children[1]->nodeType == CST::FunDec);
+    type = specifier2type(dynamic_cast<const CST::NtNode&>(*node.children[0]));
+    auto& declarator = dynamic_cast<const CST::NtNode&>(*node.children[1]);
+    identifier = dynamic_cast<const CST::StrNode&>(*declarator.children[0]).value;
+    // parameters
     if (declarator.children.size() == 4) {
-        CST::NtNode * varList;
-        for(varList = dynamic_cast<CST::NtNode*>(declarator.children[2]);
+        const CST::NtNode * varList;
+        for(varList = dynamic_cast<const CST::NtNode*>(declarator.children[2]);
             varList->nodeType == CST::VarList && varList->children.size() == 3;
-            varList = dynamic_cast<CST::NtNode*>(varList->children[2])
+            varList = dynamic_cast<const CST::NtNode*>(varList->children[2])
         ) {
-            parameters.emplace_back(createParamDec(dynamic_cast<CST::NtNode&>(*varList->children[0])));
+            parameters.emplace_back(createParamDec(dynamic_cast<const CST::NtNode&>(*varList->children[0])));
         }
-        parameters.emplace_back(createParamDec(dynamic_cast<CST::NtNode&>(*varList->children[0])));
+        parameters.emplace_back(createParamDec(dynamic_cast<const CST::NtNode&>(*varList->children[0])));
     }
+    body = unique_ptr<ComplexStmt>(new ComplexStmt(dynamic_cast<const CST::NtNode&>(*node.children[2])));
 }
 
 static vector<unique_ptr<VarDef>> createExtDefs(const CST::NtNode& node) {
     assert(node.nodeType == CST::ExtDef && node.children[1]->nodeType == CST::ExtDecList);
     vector<unique_ptr<VarDef>> varDefs;
-    shared_ptr<Type> type = specifier2type(dynamic_cast<CST::NtNode&>(*node.children[0]));
-    CST::NtNode * decList;
-    for (decList = dynamic_cast<CST::NtNode*>(node.children[1]);
+    shared_ptr<Type> type = specifier2type(dynamic_cast<const CST::NtNode&>(*node.children[0]));
+    const CST::NtNode * decList;
+    for (decList = dynamic_cast<const CST::NtNode*>(node.children[1]);
          decList->nodeType == CST::ExtDecList && decList->children.size() == 3;
-         decList = dynamic_cast<CST::NtNode*>(decList->children[2])
+         decList = dynamic_cast<const CST::NtNode*>(decList->children[2])
     ) {
         unique_ptr<VarDef> varDef(new VarDef);
         varDef->type = type;
@@ -375,14 +380,14 @@ static vector<unique_ptr<VarDef>> createExtDefs(const CST::NtNode& node) {
     return varDefs;
 }
 
-Program::Program(const CST::NtNode& node) {
-    assert(node.nodeType == CST::Program);
-    const CST::NtNode * defList;
-    for (defList = dynamic_cast<const CST::NtNode*>(node.children[0]);
+Program::Program(const CST::Node& ntNode) {
+    assert(ntNode.nodeType == CST::Program);
+    const CST::NtNode& node = dynamic_cast<const CST::NtNode&>(ntNode);
+    for (auto defList = dynamic_cast<const CST::NtNode*>(node.children[0]);
          defList->nodeType == CST::ExtDefList && defList->children.size() == 2;
          defList = dynamic_cast<const CST::NtNode*>(defList->children[1])
     ) {
-        auto def = dynamic_cast<const CST::NtNode&>(*defList->children[0]);
+        auto& def = dynamic_cast<const CST::NtNode&>(*defList->children[0]);
         switch (def.children[1]->nodeType) {
         case CST::ExtDecList: {
             auto varDefs = createExtDefs(def);

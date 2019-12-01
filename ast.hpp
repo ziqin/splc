@@ -190,7 +190,7 @@ struct Program: public Node {
     std::vector<std::unique_ptr<Def>> definitions;
     // TODO:
     // std::unique_ptr<symbol_table_t*> scope;
-    Program(const CST::NtNode&);
+    Program(const CST::Node&);
 };
 
 } // end of namespace AST
