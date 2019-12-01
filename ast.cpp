@@ -28,7 +28,7 @@ ExpPtr Exp::createExp(const CST::Node& node) {
         case 1:
             return createExp(*ntNode.children[0]);
         case 2:
-            return ExpPtr(new BinaryExp(ntNode));
+            return ExpPtr(new UnaryExp(ntNode));
         case 3:
             switch (ntNode.children[1]->nodeType) {
             case CST::ASSIGN:   return ExpPtr(new AssignExp(ntNode));
@@ -163,50 +163,10 @@ WhileStmt::WhileStmt(const CST::NtNode& node):
 {}
 
 ForStmt::ForStmt(const CST::NtNode& node) {
-    switch (node.children.size()) {
-    case 6:
-        test = nullptr;
-        test = nullptr;
-        update = nullptr;
-        break;
-    case 7:
-        if (node.children[2]->nodeType == CST::Exp) {
-            init = Exp::createExp(*node.children[2]);
-            test = nullptr;
-            update = nullptr;
-        } else if (node.children[3]->nodeType == CST::Exp) {
-            init = nullptr;
-            test = Exp::createExp(*node.children[3]);
-            update = nullptr;
-        } else {
-            init = nullptr;
-            test = nullptr;
-            update = Exp::createExp(*node.children[4]);
-        }
-        break;
-    case 8:
-        if (node.children[5]->nodeType == CST::SEMI) {
-            init = Exp::createExp(*node.children[2]);
-            test = Exp::createExp(*node.children[4]);
-            update = nullptr;
-        } else if (node.children[4]->nodeType == CST::SEMI) {
-            init = Exp::createExp(*node.children[2]);
-            test = nullptr;
-            update = Exp::createExp(*node.children[5]);
-        } else {
-            init = nullptr;
-            test = Exp::createExp(*node.children[3]);
-            update = Exp::createExp(*node.children[5]);
-        }
-        break;
-    case 9:
-        init = Exp::createExp(*node.children[2]);
-        test = Exp::createExp(*node.children[4]);
-        update = Exp::createExp(*node.children[6]);
-        break;
-    default:
-        throw invalid_argument(invalidCstNodeType);
-    }
+    assert(node.nodeType == CST::Stmt && node.children.size() == 9);
+    init = node.children[2] ? Exp::createExp(*node.children[2]) : nullptr;
+    test = node.children[4] ? Exp::createExp(*node.children[4]) : nullptr;
+    update = node.children[6] ? Exp::createExp(*node.children[6]) : nullptr;
     body = createStmt(dynamic_cast<const CST::NtNode&>(*node.children[node.children.size() - 1]));
 }
 
@@ -221,7 +181,7 @@ ComplexStmt::ComplexStmt(const CST::NtNode& node) {
          list->nodeType == CST::StmtList && list->children.size() == 2;
          list = dynamic_cast<const CST::NtNode*>(list->children[1])
     ) {
-        body.push_back(createStmt(dynamic_cast<const CST::NtNode&>(*list->children[0])));
+        body.emplace_back(createStmt(dynamic_cast<const CST::NtNode&>(*list->children[0])));
     }
 }
 
@@ -266,7 +226,7 @@ static vector<unique_ptr<VarDef>> decList2varDefs(shared_ptr<Type> type, const C
     ) {
         varDefs.push_back(dec2varDef(type, dynamic_cast<const CST::NtNode&>(*list->children[0])));
     }
-    varDefs.push_back(dec2varDef(type, dynamic_cast<const CST::NtNode&>(*list->children[0])));
+    varDefs.emplace_back(dec2varDef(type, dynamic_cast<const CST::NtNode&>(*list->children[0])));
     return varDefs;
 }
 
@@ -281,7 +241,7 @@ static vector<unique_ptr<VarDef>> createDefs(const CST::NtNode& node) {
         definitions.reserve(varDefs.size());
         move(varDefs.begin(), varDefs.end(), back_inserter(definitions));
     } else if (node.nodeType == CST::DefList) {
-        for (auto defList = &node;
+        for (const CST::NtNode * defList = &node;
              defList->children.size() == 2;
              defList = dynamic_cast<const CST::NtNode*>(defList->children[1])
         ) {
