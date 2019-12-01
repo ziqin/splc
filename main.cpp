@@ -3,6 +3,7 @@
 #include <memory>
 #include "cst.hpp"
 #include "parser.hpp"
+#include "ast.hpp"
 
 using namespace std;
 
@@ -11,16 +12,15 @@ using namespace std;
 #define PARSING_ERR 0x4
 
 
-static char * getTargetPath(const char * srcPath) {
-    int name_length = strlen(srcPath);
-    int prefixLength = name_length - 4;
-    if (prefixLength < 0 || strcmp(srcPath + prefixLength, ".spl") != 0) {  // not ends with .spl
-        prefixLength = name_length;
+static string targetPathOf(const string& srcPath) {
+    static const string suffix = ".spl";
+
+    size_t prefixLen = srcPath.length() - suffix.length();
+    if (prefixLen < 0 || srcPath.compare(prefixLen, suffix.length(), suffix) != 0) {
+        throw invalid_argument("Invalid source file path!");
     }
-    char * targetPath = (char *) malloc(prefixLength + 5);
-    memcpy(targetPath, srcPath, prefixLength);
-    strcpy(targetPath + prefixLength, ".out");
-    return targetPath;
+
+    return srcPath.substr(0, prefixLen) + ".out";
 }
 
 
@@ -33,28 +33,31 @@ int main(int argc, const char ** argv) {
 
     // filenames
     const char * srcPath = argv[1];
-    char * targetPath = getTargetPath(srcPath);
+    string targetPath = targetPathOf(srcPath);
 
     FILE * srcFile;
-    if (!(srcFile = fopen(srcPath, "r")) || !freopen(targetPath, "w", stderr)) {
+    if (!(srcFile = fopen(srcPath, "r")) || !freopen(targetPath.c_str(), "w", stderr)) {
         fprintf(stderr, "Failed to open file(s)\n");
         exit(IO_ERR);
     }
 
     // parsing
-    std::unique_ptr<CST::Node> parseTree(parseFile(srcFile));
+    unique_ptr<CST::Node> parseTree(parseFile(srcFile));
     if (!parseTree) { // lexical/syntax error
         exit(PARSING_ERR);
     }
 
     // write parse tree to file
-    FILE * targetFile = fopen(targetPath, "w");
+    FILE * targetFile = fopen(targetPath.c_str(), "w");
     if (!targetFile) {
-        fprintf(stderr, "Failed to open file %s to write\n", targetPath);
+        fprintf(stderr, "Failed to open file %s to write\n", targetPath.c_str());
         exit(IO_ERR);
     }
     parseTree->fprint(targetFile, 0);
     fclose(targetFile);
+
+    // concrete syntax tree -> abstract syntax tree
+    unique_ptr<AST::Program> program(new AST::Program(*parseTree));
 
     return 0;
 }
