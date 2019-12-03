@@ -22,6 +22,11 @@ namespace AST {
 
 struct Node {
     // TODO: line number
+    std::shared_ptr<SymbolTable> scope;
+
+    virtual void setScope(std::shared_ptr<SymbolTable> scope) {
+        this->scope = scope;
+    }
 };
 
 struct Exp: public Node {
@@ -30,7 +35,6 @@ struct Exp: public Node {
     Exp(): type(nullptr) {}
     Exp(std::shared_ptr<Type> type): type(type) {}
     virtual ~Exp() {}
-
     static std::unique_ptr<Exp> createExp(const CST::Node&);
 };
 
@@ -133,6 +137,7 @@ struct IfStmt: public Stmt {
     std::unique_ptr<Stmt> consequent, alternate;
 
     IfStmt(const CST::NtNode&);
+    void setScope(std::shared_ptr<SymbolTable>);
 };
 
 struct WhileStmt: public Stmt {
@@ -140,6 +145,7 @@ struct WhileStmt: public Stmt {
     std::unique_ptr<Stmt> body;
 
     WhileStmt(const CST::NtNode&);
+    void setScope(std::shared_ptr<SymbolTable>);
 };
 
 struct ForStmt: public Stmt {
@@ -147,6 +153,7 @@ struct ForStmt: public Stmt {
     std::unique_ptr<Stmt> body;
 
     ForStmt(const CST::NtNode&);
+    void setScope(std::shared_ptr<SymbolTable>);
 };
 
 struct VarDef;
@@ -156,6 +163,7 @@ struct ComplexStmt: public Stmt {
     std::vector<std::unique_ptr<Stmt>> body;
 
     ComplexStmt(const CST::NtNode&);
+    void setScope(std::shared_ptr<SymbolTable>);
 };
 
 
@@ -181,6 +189,7 @@ struct FunctionDef: public Def {
     std::unique_ptr<ComplexStmt> body;
 
     FunctionDef(const CST::NtNode&);
+    void setScope(std::shared_ptr<SymbolTable> scope);
 };
 
 
@@ -188,9 +197,16 @@ struct FunctionDef: public Def {
 
 struct Program: public Node {
     std::vector<std::unique_ptr<Def>> definitions;
-    // TODO:
-    // std::unique_ptr<symbol_table_t*> scope;
+    std::shared_ptr<SymbolTable> scope;
+
     Program(const CST::Node&);
+
+    void initScope() {
+        scope = std::shared_ptr<SymbolTable>(new SymbolTable(nullptr));
+        for (auto& def: definitions) {
+            def->setScope(scope);
+        }
+    }
 };
 
 } // end of namespace AST

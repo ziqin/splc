@@ -43,6 +43,7 @@ int main(int argc, const char ** argv) {
 
     // parsing
     unique_ptr<CST::Node> parseTree(parseFile(srcFile));
+    fclose(srcFile);
     if (!parseTree) { // lexical/syntax error
         exit(PARSING_ERR);
     }

@@ -10,7 +10,7 @@ private:
     std::map<std::string, std::shared_ptr<Type>> table;
     std::shared_ptr<SymbolTable> parent;
 
-private:
+public:
     SymbolTable(std::shared_ptr<SymbolTable> parent): parent(parent) {}
 
     void add(std::string identifier, std::shared_ptr<Type> type) {

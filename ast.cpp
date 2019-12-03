@@ -157,10 +157,22 @@ IfStmt::IfStmt(const CST::NtNode& node):
     alternate(node.children.size() == 7 ? createStmt(dynamic_cast<const CST::NtNode&>(*node.children[6])) : nullptr)
 {}
 
+void IfStmt::setScope(std::shared_ptr<SymbolTable> scope) {
+    this->scope = shared_ptr<SymbolTable>(new SymbolTable(scope));
+    consequent->setScope(this->scope);
+    if (alternate != nullptr) alternate->setScope(this->scope);
+}
+
 WhileStmt::WhileStmt(const CST::NtNode& node):
     test(Exp::createExp(*node.children[2])),
     body(createStmt(dynamic_cast<const CST::NtNode&>(*node.children[4])))
 {}
+
+void WhileStmt::setScope(std::shared_ptr<SymbolTable> scope) {
+    this->scope = shared_ptr<SymbolTable>(new SymbolTable(scope));
+    test->setScope(this->scope);
+    body->setScope(this->scope);
+}
 
 ForStmt::ForStmt(const CST::NtNode& node) {
     assert(node.nodeType == CST::Stmt && node.children.size() == 9);
@@ -168,6 +180,14 @@ ForStmt::ForStmt(const CST::NtNode& node) {
     test = node.children[4] ? Exp::createExp(*node.children[4]) : nullptr;
     update = node.children[6] ? Exp::createExp(*node.children[6]) : nullptr;
     body = createStmt(dynamic_cast<const CST::NtNode&>(*node.children[node.children.size() - 1]));
+}
+
+void ForStmt::setScope(std::shared_ptr<SymbolTable> scope) {
+    this->scope = shared_ptr<SymbolTable>(new SymbolTable(scope));
+    if (init != nullptr) init->setScope(this->scope);
+    if (test != nullptr) test->setScope(this->scope);
+    if (update != nullptr) update->setScope(this->scope);
+    body->setScope(this->scope);
 }
 
 static vector<unique_ptr<VarDef>> createDefs(const CST::NtNode& node);
@@ -182,6 +202,16 @@ ComplexStmt::ComplexStmt(const CST::NtNode& node) {
          list = dynamic_cast<const CST::NtNode*>(list->children[1])
     ) {
         body.emplace_back(createStmt(dynamic_cast<const CST::NtNode&>(*list->children[0])));
+    }
+}
+
+void ComplexStmt::setScope(std::shared_ptr<SymbolTable> scope) {
+    this->scope = std::shared_ptr<SymbolTable>(new SymbolTable(scope));
+    for (auto& def: definitions) {
+        def->setScope(this->scope);
+    }
+    for (auto& stmt: body) {
+        stmt->setScope(this->scope);
     }
 }
 
@@ -317,6 +347,14 @@ FunctionDef::FunctionDef(const CST::NtNode& node) {
         parameters.emplace_back(createParamDec(dynamic_cast<const CST::NtNode&>(*varList->children[0])));
     }
     body = unique_ptr<ComplexStmt>(new ComplexStmt(dynamic_cast<const CST::NtNode&>(*node.children[2])));
+}
+
+void FunctionDef::setScope(std::shared_ptr<SymbolTable> scope) {
+    this->scope = shared_ptr<SymbolTable>(new SymbolTable(scope));
+    for (auto& para: parameters) {
+        para->setScope(this->scope);
+    }
+    body->setScope(this->scope);
 }
 
 static vector<unique_ptr<VarDef>> createExtDefs(const CST::NtNode& node) {
