@@ -14,7 +14,7 @@ install: main.elf
 	install -D $^ bin/splc
 
 # command line interface
-main.elf: main.o libparser.a libsementic.a
+main.elf: main.o libparser.a libsemantic.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 main.o: main.cpp parser.hpp cst.hpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -34,7 +34,7 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) $^
 
 # semantic analysis
-libsementic.a: ast.o type.o
+libsemantic.a: ast.o type.o
 	$(AR) rcs $@ $^
 ast.o: ast.cpp ast.hpp
 	$(CXX) $(CXXFLAGS) -c $<

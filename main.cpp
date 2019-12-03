@@ -1,5 +1,5 @@
 #include <cstdio>
-#include <cstring>
+#include <iostream>
 #include <memory>
 #include "cst.hpp"
 #include "parser.hpp"
@@ -27,7 +27,7 @@ static string targetPathOf(const string& srcPath) {
 int main(int argc, const char ** argv) {
     // check cli arguments
     if (argc != 2) {
-        fprintf(stderr, "Usage:\n\t%s /path/to/source/file.spl\n", argv[0]);
+        cerr << "Usage:\n\t" << argv[0] << " /path/to/source/file.spl" << endl;
         exit(CMD_ERR);
     }
 
@@ -37,7 +37,7 @@ int main(int argc, const char ** argv) {
 
     FILE * srcFile;
     if (!(srcFile = fopen(srcPath, "r")) || !freopen(targetPath.c_str(), "w", stderr)) {
-        fprintf(stderr, "Failed to open file(s)\n");
+        cerr << "Failed to open file(s)" << endl;
         exit(IO_ERR);
     }
 
@@ -51,7 +51,7 @@ int main(int argc, const char ** argv) {
     // write parse tree to file
     FILE * targetFile = fopen(targetPath.c_str(), "w");
     if (!targetFile) {
-        fprintf(stderr, "Failed to open file %s to write\n", targetPath.c_str());
+        cerr << "Failed to open file " << targetPath << " to write" << endl;
         exit(IO_ERR);
     }
     parseTree->fprint(targetFile, 0);
