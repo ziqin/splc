@@ -12,6 +12,8 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get install flex bison
     - name: Build
-      run: make
-    - name: Test
-      run: make test
+      run: make -j2
+    - name: Unit Tests
+      run: make unit-test
+    - name: Diff Tests
+      run: make diff-test

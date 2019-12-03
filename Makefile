@@ -42,9 +42,14 @@ type.o: type.cpp type.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:
-	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/ test/*.out
+	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/ test/*.out tests/*.o tests/*.elf
 
-test: install
+test: unit-test diff-test
+
+unit-test: libparser.a libsemantic.a
+	cd tests && make test
+
+diff-test: install
 	cd test && ./diff_test.py
 
 .PHONY: splc clean test

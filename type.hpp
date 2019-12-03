@@ -13,7 +13,7 @@ namespace AST {
 struct Type {
     virtual ~Type() {}
     virtual bool operator==(const Type& other) const = 0;
-    virtual bool operator!=(const Type& other) const {
+    bool operator!=(const Type& other) const {
         return !(*this == other);
     }
 };
