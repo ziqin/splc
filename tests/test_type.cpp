@@ -6,43 +6,89 @@ using namespace std;
 using namespace AST;
 
 
-SCENARIO("types are comparable", "[AST::Type]") {
+TEST_CASE("types are comparable", "[AST::Type]") {
+    shared_ptr<Type> charType(new PrimitiveType(PrimitiveType::TYPE_CHAR));
+    shared_ptr<Type> intType(new PrimitiveType(PrimitiveType::TYPE_INT));
 
-    GIVEN("2 primitive types") {
-        shared_ptr<Type> charType(new PrimitiveType(PrimitiveType::TYPE_CHAR));
-        shared_ptr<Type> intType(new PrimitiveType(PrimitiveType::TYPE_INT));
-
+    SECTION("comparing primitive types") {
         REQUIRE(*charType != *intType);
+    }
 
-        WHEN("comparing some 1D arrays") {
-            shared_ptr<Type> charArrayType1(new ArrayType(charType, 5));
-            shared_ptr<Type> charArrayType2(new ArrayType(charType, 5));
-            shared_ptr<Type> intArrayType1(new ArrayType(intType, 5));
-            shared_ptr<Type> intArrayType2(new ArrayType(intType, 6));
+    SECTION("comparing 1D arrays") {
+        shared_ptr<Type> charArrayType1(new ArrayType(charType, 5));
+        shared_ptr<Type> charArrayType2(new ArrayType(charType, 5));
+        shared_ptr<Type> intArrayType1(new ArrayType(intType, 5));
+        shared_ptr<Type> intArrayType2(new ArrayType(intType, 6));
+        REQUIRE(*charArrayType1 == *charArrayType2);
+        REQUIRE(*charArrayType1 != *intArrayType1);
+        REQUIRE(*intArrayType1 != *intArrayType2);
+    }
 
-            THEN("array types are equal only if base type match") {
-                REQUIRE(*charArrayType1 == *charArrayType2);
-                REQUIRE(*charArrayType1 != *intArrayType1);
-            }
+    SECTION("constructing 2D arrays") {
+        shared_ptr<Type> char1dArrayType1(new ArrayType(charType, 5));
+        shared_ptr<Type> char1dArrayType2(new ArrayType(charType, 5));
+        ArrayType char2dArrayType1(char1dArrayType1, 3);
+        REQUIRE(char2dArrayType1.size == 3);
+        REQUIRE(*(char2dArrayType1.baseType) == *char1dArrayType2);
 
-            THEN("array types are equal only if size match") {
-                REQUIRE(*intArrayType1 != *intArrayType2);
-            }
-        }
-
-        WHEN("constructing 2D arrays") {
-            shared_ptr<Type> char1dArrayType1(new ArrayType(charType, 5));
-            shared_ptr<Type> char1dArrayType2(new ArrayType(charType, 5));
-            ArrayType char2dArrayType(char1dArrayType1, 3);
-
-            THEN("outer dimension is correct") {
-                REQUIRE(char2dArrayType.size == 3);
-            }
-
-            THEN("base type is correct") {
-                REQUIRE(*char2dArrayType.baseType == *char1dArrayType2);
-            }
+        SECTION("comparing 2D arrays") {
+            ArrayType char2dArrayType2(char1dArrayType2, 3);
+            ArrayType char2dArrayType3(char1dArrayType1, 4);
+            REQUIRE(char2dArrayType1 == char2dArrayType2);
+            REQUIRE(char2dArrayType2 != char2dArrayType3);
         }
     }
 
+    SECTION("comparing structure types") {
+        auto charField = make_pair(charType, "field1");
+        auto intField = make_pair(intType, "field2");
+        StructType structType1({ charField, intField });
+
+        REQUIRE(*structType1.getFieldType("field1") == *charType);
+
+        SECTION("structures matter") {
+            StructType structType2({ intField, charField });
+            REQUIRE(structType1 != structType2);
+        }
+
+        SECTION("filed names don't matter") {
+            StructType structType2({
+                make_pair(charType, "attr1"),
+                make_pair(intType, "attr2")
+            });
+            REQUIRE(structType1 == structType2);
+        }
+    }
+
+    SECTION("comparing function types") {
+        SECTION("comparing procedure types") {
+            FunctionType procType1(nullptr, { charType, intType });
+            FunctionType procType2(nullptr, { intType, charType });
+            FunctionType procType3(nullptr, {
+                shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)),
+                shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_INT))
+            });
+            REQUIRE(procType1 != procType2);
+            REQUIRE(procType1 == procType3);
+        }
+
+        SECTION("functions may not have any parameter") {
+            FunctionType funcType1(intType, {});
+            FunctionType funcType2(intType);
+            FunctionType funcType3(charType);
+            REQUIRE(funcType1 == funcType2);
+            REQUIRE(funcType2 != funcType3);
+        }
+    }
+
+    SECTION("comparing type alias") {
+        shared_ptr<Type> charAliasType1(new TypeAlias("Alias1", charType));
+        TypeAlias charAliasType2("Alias2", shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)));
+        TypeAlias charAliasType3("Alias3", charAliasType1);
+        TypeAlias intAliasType("IntAlias", intType);
+        REQUIRE(*charAliasType1 == charAliasType2);
+        REQUIRE(*charType == charAliasType2);
+        REQUIRE(charAliasType2 == charAliasType3);
+        REQUIRE(charAliasType2 != intAliasType);
+    }
 }

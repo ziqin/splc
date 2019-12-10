@@ -4,7 +4,6 @@
 #include <memory>
 #include <vector>
 #include <string>
-#include <typeinfo>
 #include <utility>
 
 
@@ -25,7 +24,6 @@ struct PrimitiveType: public Type {
         TYPE_FLOAT,
         TYPE_AUTO
     } primitive;
-
     PrimitiveType(enum Primitive primitive): primitive(primitive) {}
     bool operator==(const Type& other) const;
 };
@@ -42,6 +40,8 @@ struct ArrayType: public Type {
 struct StructType: public Type {
     std::vector<std::pair<std::shared_ptr<Type>, std::string>> fields;
     bool operator==(const Type& other) const;
+    StructType() {}
+    StructType(const std::vector<std::pair<std::shared_ptr<Type>, std::string>>& fields): fields(fields) {}
     std::shared_ptr<Type> getFieldType(const std::string& name);
 };
 
@@ -68,8 +68,13 @@ struct TypeAlias: public Type {
         name(name), base(base)
     {}
 
-    bool operator==(const Type& other) const;
+    bool operator==(const TypeAlias&) const;
+    bool operator==(const Type&) const;
 };
+
+inline static bool operator==(const Type& a, const TypeAlias& b) {
+    return b == a;
+}
 
 } // end of namespace AST
 

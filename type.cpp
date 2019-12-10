@@ -15,7 +15,7 @@ bool PrimitiveType::operator==(const Type& other) const {
 bool ArrayType::operator==(const Type& other) const {
     try {
         const ArrayType& o = dynamic_cast<const ArrayType&>(other);
-        return baseType == o.baseType && size == o.size;
+        return *baseType == *o.baseType && size == o.size;
     } catch (const std::bad_cast& e) {
         return false;
     }
@@ -46,8 +46,11 @@ std::shared_ptr<Type> StructType::getFieldType(const std::string& name) {
 bool FunctionType::operator==(const Type& other) const {
     try {
         const FunctionType& o = dynamic_cast<const FunctionType&>(other);
-        if (*returned != *(o.returned) || parameters.size() != o.parameters.size()) return false;
+        if ((returned != nullptr && o.returned != nullptr && *returned != *(o.returned)) ||
+            parameters.size() != o.parameters.size()
+        ) return false;
         for (size_t i = 0; i < parameters.size(); ++i) {
+            if (parameters[i] == o.parameters[i]) continue; // don't forget nullptr
             if (*(parameters[i]) != *(o.parameters[i]))
                 return false;
         }
@@ -55,6 +58,10 @@ bool FunctionType::operator==(const Type& other) const {
     } catch (const std::bad_cast& e) {
         return false;
     }
+}
+
+bool TypeAlias::operator==(const TypeAlias& other) const {
+    return other == *base;
 }
 
 bool TypeAlias::operator==(const Type& other) const {
