@@ -24,7 +24,7 @@ struct PrimitiveType: public Type {
         TYPE_FLOAT,
         TYPE_AUTO
     } primitive;
-    PrimitiveType(enum Primitive primitive): primitive(primitive) {}
+    PrimitiveType(Primitive primitive): primitive(primitive) {}
     bool operator==(const Type& other) const;
 };
 

@@ -11,7 +11,7 @@ TEST_CASE("types are comparable", "[AST::Type]") {
     shared_ptr<Type> intType(new PrimitiveType(PrimitiveType::TYPE_INT));
 
     SECTION("comparing primitive types") {
-        REQUIRE(*charType != *intType);
+        CHECK(*charType != *intType);
     }
 
     SECTION("comparing 1D arrays") {
@@ -19,9 +19,9 @@ TEST_CASE("types are comparable", "[AST::Type]") {
         shared_ptr<Type> charArrayType2(new ArrayType(charType, 5));
         shared_ptr<Type> intArrayType1(new ArrayType(intType, 5));
         shared_ptr<Type> intArrayType2(new ArrayType(intType, 6));
-        REQUIRE(*charArrayType1 == *charArrayType2);
-        REQUIRE(*charArrayType1 != *intArrayType1);
-        REQUIRE(*intArrayType1 != *intArrayType2);
+        CHECK(*charArrayType1 == *charArrayType2);
+        CHECK(*charArrayType1 != *intArrayType1);
+        CHECK(*intArrayType1 != *intArrayType2);
     }
 
     SECTION("constructing 2D arrays") {
@@ -34,8 +34,8 @@ TEST_CASE("types are comparable", "[AST::Type]") {
         SECTION("comparing 2D arrays") {
             ArrayType char2dArrayType2(char1dArrayType2, 3);
             ArrayType char2dArrayType3(char1dArrayType1, 4);
-            REQUIRE(char2dArrayType1 == char2dArrayType2);
-            REQUIRE(char2dArrayType2 != char2dArrayType3);
+            CHECK(char2dArrayType1 == char2dArrayType2);
+            CHECK(char2dArrayType2 != char2dArrayType3);
         }
     }
 
@@ -44,11 +44,11 @@ TEST_CASE("types are comparable", "[AST::Type]") {
         auto intField = make_pair(intType, "field2");
         StructType structType1({ charField, intField });
 
-        REQUIRE(*structType1.getFieldType("field1") == *charType);
+        CHECK(*structType1.getFieldType("field1") == *charType);
 
         SECTION("structures matter") {
             StructType structType2({ intField, charField });
-            REQUIRE(structType1 != structType2);
+            CHECK(structType1 != structType2);
         }
 
         SECTION("filed names don't matter") {
@@ -56,7 +56,7 @@ TEST_CASE("types are comparable", "[AST::Type]") {
                 make_pair(charType, "attr1"),
                 make_pair(intType, "attr2")
             });
-            REQUIRE(structType1 == structType2);
+            CHECK(structType1 == structType2);
         }
     }
 
@@ -68,16 +68,16 @@ TEST_CASE("types are comparable", "[AST::Type]") {
                 shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)),
                 shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_INT))
             });
-            REQUIRE(procType1 != procType2);
-            REQUIRE(procType1 == procType3);
+            CHECK(procType1 != procType2);
+            CHECK(procType1 == procType3);
         }
 
         SECTION("functions may not have any parameter") {
             FunctionType funcType1(intType, {});
             FunctionType funcType2(intType);
             FunctionType funcType3(charType);
-            REQUIRE(funcType1 == funcType2);
-            REQUIRE(funcType2 != funcType3);
+            CHECK(funcType1 == funcType2);
+            CHECK(funcType2 != funcType3);
         }
     }
 
@@ -86,9 +86,9 @@ TEST_CASE("types are comparable", "[AST::Type]") {
         TypeAlias charAliasType2("Alias2", shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)));
         TypeAlias charAliasType3("Alias3", charAliasType1);
         TypeAlias intAliasType("IntAlias", intType);
-        REQUIRE(*charAliasType1 == charAliasType2);
-        REQUIRE(*charType == charAliasType2);
-        REQUIRE(charAliasType2 == charAliasType3);
-        REQUIRE(charAliasType2 != intAliasType);
+        CHECK(*charAliasType1 == charAliasType2);
+        CHECK(*charType == charAliasType2);
+        CHECK(charAliasType2 == charAliasType3);
+        CHECK(charAliasType2 != intAliasType);
     }
 }
