@@ -5,7 +5,7 @@ LEX=flex
 
 
 BISONFLAGS=-t -d -v
-CXXFLAGS=-std=c++11 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
+CXXFLAGS=-std=c++14 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
 LDFLAGS=-static -lfl -ly -Wl,--gc-sections
 
 # installation
@@ -34,9 +34,9 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) $^
 
 # semantic analysis
-libsemantic.a: ast.o type.o
+libsemantic.a: ast_exp.o type.o
 	$(AR) rcs $@ $^
-ast.o: ast.cpp ast.hpp
+ast_exp.o: ast_exp.cpp ast_exp.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 type.o: type.cpp type.hpp
 	$(CXX) $(CXXFLAGS) -c $<
