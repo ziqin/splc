@@ -4,10 +4,18 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 
 namespace AST {
+
+enum Primitive {
+    TYPE_CHAR,
+    TYPE_INT,
+    TYPE_FLOAT,
+    TYPE_AUTO
+};
 
 struct Type {
     virtual ~Type() {}
@@ -18,12 +26,8 @@ struct Type {
 };
 
 struct PrimitiveType: public Type {
-    enum Primitive {
-        TYPE_CHAR,
-        TYPE_INT,
-        TYPE_FLOAT,
-        TYPE_AUTO
-    } primitive;
+    Primitive primitive;
+
     PrimitiveType(Primitive primitive): primitive(primitive) {}
     bool operator==(const Type& other) const;
 };
@@ -39,9 +43,10 @@ struct ArrayType: public Type {
 
 struct StructType: public Type {
     std::vector<std::pair<std::shared_ptr<Type>, std::string>> fields;
-    bool operator==(const Type& other) const;
+
     StructType() {}
     StructType(const std::vector<std::pair<std::shared_ptr<Type>, std::string>>& fields): fields(fields) {}
+    bool operator==(const Type& other) const;
     std::shared_ptr<Type> getFieldType(const std::string& name);
 };
 
@@ -74,6 +79,12 @@ struct TypeAlias: public Type {
 
 inline static bool operator==(const Type& a, const TypeAlias& b) {
     return b == a;
+}
+
+
+template<typename T, typename... Args, typename std::enable_if<std::is_base_of<Type, T>::value>::type* = nullptr>
+std::shared_ptr<Type> make_type(Args... args) {
+    return std::shared_ptr<Type>(new T(args...));
 }
 
 } // end of namespace AST

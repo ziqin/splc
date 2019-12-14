@@ -18,12 +18,20 @@ public:
     }
 
     std::shared_ptr<Type> getType(std::string identifier) {
-        std::shared_ptr<SymbolTable> t;
-        for (; t != nullptr; t = t->parent) {
-            auto found = t->table.find(identifier);
-            if (found != t->table.end()) return found->second;
-        }
+        auto found = table.find(identifier);
+        if (found != table.end()) return found->second;
+        if (parent != nullptr) return parent->getType(identifier);
         return nullptr;
+    }
+
+    size_t size() const {
+        return table.size() + (parent == nullptr ? 0 : parent->size());
+    }
+
+    bool isLowerThan(std::shared_ptr<SymbolTable> scope) const {
+        if (scope.get() == this) return true;
+        if (parent != nullptr) return parent->isLowerThan(scope);
+        return false;
     }
 };
 

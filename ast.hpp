@@ -1,70 +1,193 @@
-#ifndef AST_H
-#define AST_H
+#ifndef AST_HPP
+#define AST_HPP
 
+#include <initializer_list>
+#include <list>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include "symbol_table.hpp"
 #include "type.hpp"
 
 
-namespace CST {
-    struct Node;
-    struct StrNode;
-    struct NtNode;
-}
-
-
-/* Expressions */
-
 namespace AST {
 
+struct Node;
+struct Program;
+struct ExtDef;
+struct ExtDec;
+struct Specifier;
+struct StructSpecifier;
+struct VarDec;
+struct FunDec;
+struct ParamDec;
+struct Stmt;
+struct CompoundStmt;
+struct Def;
+struct Dec;
+struct Exp;
+
+
 struct Node {
-    // TODO: line number
+    // TODO: source location
+
     std::shared_ptr<SymbolTable> scope;
 
-    virtual void setScope(std::shared_ptr<SymbolTable> scope) {
-        this->scope = scope;
-    }
+    virtual ~Node() {}
+    virtual void setScope(std::shared_ptr<SymbolTable>);
 };
+
+
+// misc
+
+struct VarDec: public Node {
+    std::string identifier;
+
+    VarDec(const std::string& id): identifier(id) {}
+};
+
+struct ArrDec: public VarDec {
+    std::vector<unsigned> dimensions;
+
+    ArrDec(const VarDec& declarator, unsigned dim);
+};
+
+struct Dec: public Node {
+    VarDec * declarator;
+    Exp * init;
+
+    Dec(VarDec * declarator, Exp * init);
+    ~Dec();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct Def: public Node {
+    Specifier * specifier;
+    std::vector<Dec*> declarations;
+
+    Def(Specifier * specifier, const std::list<Dec*>& decList);
+    ~Def();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct ParamDec: public Node {
+    Specifier * specifier;
+    VarDec * declarator;
+
+    ParamDec(Specifier * specifier, VarDec * declarator);
+    ~ParamDec();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct FunDec: public Node {
+    std::string identifier;
+    std::vector<ParamDec*> parameters;
+
+    FunDec(const std::string& id, const std::list<ParamDec*>& varList = {});
+    ~FunDec();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct Specifier: public Node {};
+
+struct PrimitiveSpecifier final: public Specifier {
+    Primitive primitive;
+
+    PrimitiveSpecifier(const std::string& type);
+};
+
+struct StructSpecifier final: public Specifier {
+    std::string identifier;
+    std::vector<Def*> definitions;
+
+    StructSpecifier(const std::string& id, const std::list<Def*>& defList = {});
+    ~StructSpecifier();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct ExtDef: public Node {};
+
+struct ExtVarDef final: public ExtDef {
+    Specifier * specifier;
+    std::vector<VarDec*> varDecs;
+
+    ExtVarDef(Specifier * specifier, const std::list<VarDec*>& extDecList);
+    ~ExtVarDef();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct StructDef final: public ExtDef {
+    StructSpecifier * specifier;
+
+    StructDef(Specifier * specifier);
+    ~StructDef();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct FunDef final: public ExtDef {
+    Specifier * specifier;
+    FunDec * declarator;
+    CompoundStmt * body;
+
+    FunDef(Specifier * specifier, FunDec * declarator, CompoundStmt * body);
+    ~FunDef();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct Program final: public Node {
+    std::vector<ExtDef*> extDefs;
+
+    Program(const std::list<ExtDef*>& extDefList);
+    ~Program();
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+
+// ------------------------ expressions ------------------------------
 
 struct Exp: public Node {
     std::shared_ptr<Type> type;
 
-    Exp(): type(nullptr) {}
+    Exp() {}
     Exp(std::shared_ptr<Type> type): type(type) {}
     virtual ~Exp() {}
-    static std::unique_ptr<Exp> createExp(const CST::Node&);
 };
+
 
 struct LiteralExp final: public Exp {
     union {
         char charVal;
         int intVal;
-        float floatVal;
+        double floatVal;
     };
 
-    LiteralExp(const CST::Node&);
+    LiteralExp(char);
+    LiteralExp(int);
+    LiteralExp(double);
 };
+
 
 struct IdExp final: public Exp {
     std::string identifier;
 
-    IdExp(const CST::StrNode&);
+    IdExp(const std::string&);
 };
 
 struct ArrayExp: public Exp {
-    std::unique_ptr<Exp> subject, index;
+    Exp * subject, * index;
 
-    ArrayExp(const CST::NtNode&);
+    ArrayExp(Exp * subject, Exp * index);
+    ~ArrayExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 struct MemberExp: public Exp {
-    std::unique_ptr<Exp> subject;
-    std::unique_ptr<IdExp> member;
+    Exp * subject;
+    IdExp * member;
 
-    MemberExp(const CST::NtNode&);
+    MemberExp(Exp * subject, Exp * member);
+    ~MemberExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 enum Operator {
@@ -80,135 +203,107 @@ enum Operator {
     OPT_MINUS,
     OPT_MUL,
     OPT_DIV,
-    OPT_NOT   
+    OPT_NOT
 };
 
 struct UnaryExp: public Exp {
-    enum Operator opt;
-    std::unique_ptr<Exp> argument;
+    Operator opt;
+    Exp * argument;
 
-    UnaryExp(const CST::NtNode&);
+    UnaryExp(Operator opt, Exp * argument);
+    ~UnaryExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 struct BinaryExp: public Exp {
-    enum Operator opt;
-    std::unique_ptr<Exp> left, right;
+    Operator opt;
+    Exp * left, * right;
 
-    BinaryExp(const CST::NtNode&);
+    BinaryExp(Exp * left, Operator opt, Exp * right);
+    ~BinaryExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 struct AssignExp: public Exp {
-    std::unique_ptr<Exp> left, right;
+    Exp * left, * right;
 
-    AssignExp(const CST::NtNode&);
+    AssignExp(Exp * left, Exp * right);
+    ~AssignExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 struct CallExp: public Exp {
-    std::unique_ptr<IdExp> callee;
-    std::vector<std::unique_ptr<Exp>> arguments;
+    IdExp * callee;
+    std::vector<Exp*> arguments;
 
-    CallExp(const CST::NtNode&);
+    CallExp(Exp * callee, std::initializer_list<Exp*> arguments);
+    ~CallExp();
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
 
-/* Statements */
+// ------------------------------ statements -------------------------------------
 
-struct Stmt: public Node {
-    virtual ~Stmt() {}
+struct Stmt: public Node {};
 
-    // TODO: scope
-    static std::unique_ptr<Stmt> createStmt(const CST::NtNode&);
-};
+struct ExpStmt final: public Stmt {
+    Exp * expression;
 
-struct ExpStmt: public Stmt {
-    std::unique_ptr<Exp> expression;
-
-    ExpStmt(const CST::NtNode&);
-};
-
-struct ReturnStmt: public Stmt {
-    std::unique_ptr<Exp> argument;
-
-    ReturnStmt(const CST::NtNode&);
-};
-
-struct IfStmt: public Stmt {
-    std::unique_ptr<Exp> test;
-    std::unique_ptr<Stmt> consequent, alternate;
-
-    IfStmt(const CST::NtNode&);
-    void setScope(std::shared_ptr<SymbolTable>);
-};
-
-struct WhileStmt: public Stmt {
-    std::unique_ptr<Exp> test;
-    std::unique_ptr<Stmt> body;
-
-    WhileStmt(const CST::NtNode&);
-    void setScope(std::shared_ptr<SymbolTable>);
-};
-
-struct ForStmt: public Stmt {
-    std::unique_ptr<Exp> init, test, update;
-    std::unique_ptr<Stmt> body;
-
-    ForStmt(const CST::NtNode&);
-    void setScope(std::shared_ptr<SymbolTable>);
-};
-
-struct VarDef;
-
-struct ComplexStmt: public Stmt {
-    std::vector<std::unique_ptr<VarDef>> definitions;
-    std::vector<std::unique_ptr<Stmt>> body;
-
-    ComplexStmt(const CST::NtNode&);
-    void setScope(std::shared_ptr<SymbolTable>);
-};
-
-
-/* Definitions */
-
-struct Def: public Node {
-    std::string identifier;
-    std::shared_ptr<Type> type;
-};
-
-struct VarDef: public Def {
-    std::unique_ptr<Exp> init;
-
-    // VarDef(std::shared_ptr<Type>, const CST::NtNode&);
-};
-
-struct StructDef: public Def {
-    StructDef(const CST::NtNode&);
-};
-
-struct FunctionDef: public Def {
-    std::vector<std::unique_ptr<VarDef>> parameters;
-    std::unique_ptr<ComplexStmt> body;
-
-    FunctionDef(const CST::NtNode&);
-    void setScope(std::shared_ptr<SymbolTable> scope);
-};
-
-
-/* Program */
-
-struct Program: public Node {
-    std::vector<std::unique_ptr<Def>> definitions;
-    std::shared_ptr<SymbolTable> scope;
-
-    Program(const CST::Node&);
-
-    void initScope() {
-        scope = std::shared_ptr<SymbolTable>(new SymbolTable(nullptr));
-        for (auto& def: definitions) {
-            def->setScope(scope);
-        }
+    ExpStmt(Exp * expression);
+    ~ExpStmt() {
+        delete expression;
     }
+    void setScope(std::shared_ptr<SymbolTable>) override;
 };
 
-} // end of namespace AST
+struct ReturnStmt final: public Stmt {
+    Exp * argument;
 
-#endif
+    ReturnStmt(Exp * argument = nullptr): argument(argument) {}
+    ~ReturnStmt() {
+        delete argument;
+    }
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct IfStmt final: public Stmt {
+    Exp * test;
+    Stmt * consequent, * alternate;
+
+    IfStmt(Exp * test, Stmt * consequent, Stmt * alternate = nullptr);
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct WhileStmt final: public Stmt {
+    Exp * test;
+    Stmt * body;
+
+    WhileStmt(Exp * test, Stmt * body);
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct ForStmt final: public Stmt {
+    Exp * init, * test, * update;
+    Stmt * body;
+
+    ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body);
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+struct CompoundStmt final: public Stmt {
+    std::vector<Def*> definitions;
+    std::vector<Stmt*> body;
+
+    CompoundStmt(const std::list<Def*>& defList, const std::list<Stmt*>& stmtList):
+        definitions(defList.begin(), defList.end()),
+        body(stmtList.begin(), stmtList.end()) {}
+    ~CompoundStmt() {
+        for (auto def: definitions) delete def;
+        for (auto stmt: body) delete stmt;
+    }
+    void setScope(std::shared_ptr<SymbolTable>) override;
+};
+
+} // namespace AST
+
+#endif // AST_HPP

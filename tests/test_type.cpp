@@ -6,9 +6,9 @@ using namespace std;
 using namespace AST;
 
 
-TEST_CASE("types are comparable", "[AST::Type]") {
-    shared_ptr<Type> charType(new PrimitiveType(PrimitiveType::TYPE_CHAR));
-    shared_ptr<Type> intType(new PrimitiveType(PrimitiveType::TYPE_INT));
+TEST_CASE("types are comparable", "[ast-type]") {
+    shared_ptr<Type> charType(new PrimitiveType(TYPE_CHAR));
+    shared_ptr<Type> intType(new PrimitiveType(TYPE_INT));
 
     SECTION("comparing primitive types") {
         CHECK(*charType != *intType);
@@ -65,8 +65,8 @@ TEST_CASE("types are comparable", "[AST::Type]") {
             FunctionType procType1(nullptr, { charType, intType });
             FunctionType procType2(nullptr, { intType, charType });
             FunctionType procType3(nullptr, {
-                shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)),
-                shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_INT))
+                shared_ptr<Type>(new PrimitiveType(TYPE_CHAR)),
+                shared_ptr<Type>(new PrimitiveType(TYPE_INT))
             });
             CHECK(procType1 != procType2);
             CHECK(procType1 == procType3);
@@ -83,7 +83,7 @@ TEST_CASE("types are comparable", "[AST::Type]") {
 
     SECTION("comparing type alias") {
         shared_ptr<Type> charAliasType1(new TypeAlias("Alias1", charType));
-        TypeAlias charAliasType2("Alias2", shared_ptr<Type>(new PrimitiveType(PrimitiveType::TYPE_CHAR)));
+        TypeAlias charAliasType2("Alias2", shared_ptr<Type>(new PrimitiveType(TYPE_CHAR)));
         TypeAlias charAliasType3("Alias3", charAliasType1);
         TypeAlias intAliasType("IntAlias", intType);
         CHECK(*charAliasType1 == charAliasType2);

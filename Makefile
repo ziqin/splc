@@ -34,9 +34,9 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) $^
 
 # semantic analysis
-libsemantic.a: ast_exp.o type.o
+libsemantic.a: ast.o type.o
 	$(AR) rcs $@ $^
-ast_exp.o: ast_exp.cpp ast_exp.hpp
+ast.o: ast.cpp ast.hpp utils.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 type.o: type.cpp type.hpp
 	$(CXX) $(CXXFLAGS) -c $<
