@@ -7,11 +7,23 @@ using namespace AST;
 using namespace std;
 
 
-// ----------------------------- misc --------------------------------
+// execute hook operation if it is set
+template <typename T>
+inline static void execHook(const Visitor& visitor, T * self, Node * parent) {
+    auto funcItr = visitor.find(typeid(*self));
+    if (funcItr != visitor.end()) funcItr->second(self, parent);
+}
 
 void Node::setScope(shared_ptr<SymbolTable> scope) {
     this->scope = scope;
 }
+
+void Node::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+}
+
+
+// ----------------------------- misc --------------------------------
 
 ArrDec::ArrDec(const VarDec& declarator, unsigned dim): VarDec(declarator.identifier) {
     try {
@@ -39,6 +51,12 @@ void Dec::setScope(std::shared_ptr<SymbolTable> scope) {
     init->setScope(scope);
 }
 
+void Dec::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    declarator->traverse(visitor, this);
+    init->traverse(visitor, this);
+}
+
 
 Def::Def(Specifier * specifier, const list<Dec*>& decList):
     specifier(specifier), declarations(decList.begin(), decList.end())
@@ -57,6 +75,12 @@ void Def::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     specifier->setScope(scope);
     for (auto dec: declarations) dec->setScope(scope);
+}
+
+void Def::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    specifier->traverse(visitor, this);
+    for (auto dec: declarations) dec->traverse(visitor, this);
 }
 
 
@@ -79,6 +103,12 @@ void ParamDec::setScope(std::shared_ptr<SymbolTable> scope) {
     declarator->setScope(scope);
 }
 
+void ParamDec::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    specifier->traverse(visitor, this);
+    declarator->traverse(visitor, this);
+}
+
 
 FunDec::FunDec(const string& id, const list<ParamDec*>& varList):
     identifier(id), parameters(varList.begin(), varList.end())
@@ -97,6 +127,12 @@ void FunDec::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     for (auto para: parameters) para->setScope(scope);
 }
+
+void FunDec::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    for (auto para: parameters) para->traverse(visitor, this);
+}
+
 
 PrimitiveSpecifier::PrimitiveSpecifier(const string& type) {
     if (type == "char") primitive = TYPE_CHAR;
@@ -124,6 +160,11 @@ void StructSpecifier::setScope(std::shared_ptr<SymbolTable> scope) {
     for (auto def: definitions) def->setScope(scope);
 }
 
+void StructSpecifier::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    for (auto def: definitions) def->traverse(visitor, this);
+}
+
 
 ExtVarDef::ExtVarDef(Specifier * specifier, const list<VarDec*>& extDecList):
     specifier(specifier), varDecs(extDecList.begin(), extDecList.end())
@@ -144,6 +185,12 @@ void ExtVarDef::setScope(std::shared_ptr<SymbolTable> scope) {
     for (auto dec: varDecs) dec->setScope(scope);
 }
 
+void ExtVarDef::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    specifier->traverse(visitor, this);
+    for (auto dec: varDecs) dec->traverse(visitor, this);
+}
+
 StructDef::StructDef(Specifier * specifier):
     specifier(dynamic_cast<StructSpecifier*>(specifier))
 {
@@ -157,6 +204,11 @@ StructDef::~StructDef() {
 void StructDef::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     specifier->setScope(scope);
+}
+
+void StructDef::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    specifier->traverse(visitor, parent);
 }
 
 
@@ -180,6 +232,13 @@ void FunDef::setScope(std::shared_ptr<SymbolTable> scope) {
     body->setScope(this->scope);
 }
 
+void FunDef::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    specifier->traverse(visitor, this);
+    declarator->traverse(visitor, this);
+    body->traverse(visitor, this);
+}
+
 
 Program::Program(const list<ExtDef*>& extDefList):
     extDefs(extDefList.begin(), extDefList.end())
@@ -199,6 +258,10 @@ void Program::setScope(std::shared_ptr<SymbolTable> scope) {
     for (auto def: extDefs) def->setScope(scope);
 }
 
+void Program::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    for (auto def: extDefs) def->traverse(visitor, this);
+}
 
 // ----------------------- expressions ---------------------------
 
@@ -214,6 +277,7 @@ LiteralExp::LiteralExp(double val):
     Exp(shared_ptr<Type>(new PrimitiveType(TYPE_FLOAT))),
     floatVal(val) {}
 
+
 IdExp::IdExp(const std::string& id): identifier(id) {
     auto itr = id.begin();
     if (itr == id.end()) throw invalid_argument("id cannot be empty");
@@ -222,6 +286,7 @@ IdExp::IdExp(const std::string& id): identifier(id) {
         if (!isalnum(*itr) && *itr != '_') throw invalid_argument("illegal id");
     }
 }
+
 
 ArrayExp::ArrayExp(Exp * subject, Exp * index): subject(subject), index(index) {
     if (hasNull(this->subject, this->index)) {
@@ -239,6 +304,13 @@ void ArrayExp::setScope(std::shared_ptr<SymbolTable> scope) {
     subject->setScope(scope);
     index->setScope(scope);
 }
+
+void ArrayExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    subject->traverse(visitor, this);
+    index->traverse(visitor, this);
+}
+
 
 MemberExp::MemberExp(Exp * subject, Exp * member):
     subject(subject), member(dynamic_cast<IdExp*>(member))
@@ -263,6 +335,13 @@ void MemberExp::setScope(std::shared_ptr<SymbolTable> scope) {
     member->setScope(scope);
 }
 
+void MemberExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    subject->traverse(visitor, this);
+    member->traverse(visitor, this);
+}
+
+
 UnaryExp::UnaryExp(Operator opt, Exp * argument):
     opt(opt), argument(argument)
 {
@@ -280,6 +359,12 @@ void UnaryExp::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     argument->setScope(scope);
 }
+
+void UnaryExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    argument->traverse(visitor, this);
+}
+
 
 BinaryExp::BinaryExp(Exp * left, Operator opt, Exp * right):
     opt(opt), left(left), right(right)
@@ -300,6 +385,13 @@ void BinaryExp::setScope(shared_ptr<SymbolTable> scope) {
     right->setScope(scope);
 }
 
+void BinaryExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    left->traverse(visitor, this);
+    right->traverse(visitor, this);
+}
+
+
 AssignExp::AssignExp(Exp * left, Exp * right): left(left), right(right) {
     if (hasNull(left, right)) {
         deleteAll(left, right);
@@ -316,6 +408,13 @@ void AssignExp::setScope(shared_ptr<SymbolTable> scope) {
     left->setScope(scope);
     right->setScope(scope);
 }
+
+void AssignExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    left->traverse(visitor, this);
+    right->traverse(visitor, this);
+}
+
 
 CallExp::CallExp(Exp * callee, initializer_list<Exp*> arguments):
     callee(dynamic_cast<IdExp*>(callee)), arguments(arguments)
@@ -340,6 +439,12 @@ void CallExp::setScope(std::shared_ptr<SymbolTable> scope) {
     for (auto arg: arguments) arg->setScope(scope);
 }
 
+void CallExp::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    callee->traverse(visitor, this);
+    for (auto arg: arguments) arg->traverse(visitor, this);
+}
+
 
 // ------------------------- statements -----------------------
 
@@ -352,10 +457,22 @@ void ExpStmt::setScope(shared_ptr<SymbolTable> scope) {
     expression->scope = scope;
 }
 
+void ExpStmt::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    expression->traverse(visitor, this);    
+}
+
+
 void ReturnStmt::setScope(shared_ptr<SymbolTable> scope) {
     this->scope = scope;
-    argument->setScope(scope);
+    if (argument) argument->setScope(scope);
 }
+
+void ReturnStmt::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    if (argument) argument->traverse(visitor, this);
+}
+
 
 IfStmt::IfStmt(Exp * test, Stmt * consequent, Stmt * alternate):
     test(test), consequent(consequent), alternate(alternate)
@@ -373,6 +490,14 @@ void IfStmt::setScope(shared_ptr<SymbolTable> scope) {
     if (alternate) alternate->setScope(scope);
 }
 
+void IfStmt::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    test->traverse(visitor, this);
+    consequent->traverse(visitor, this);
+    if (alternate) alternate->traverse(visitor, this);
+}
+
+
 WhileStmt::WhileStmt(Exp * test, Stmt * body): test(test), body(body) {
     if (hasNull(test, body)) {
         deleteAll(test, body);
@@ -386,6 +511,13 @@ void WhileStmt::setScope(shared_ptr<SymbolTable> scope) {
     body->setScope(scope);
 }
 
+void WhileStmt::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    test->traverse(visitor, this);
+    body->traverse(visitor, this);
+}
+
+
 ForStmt::ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body):
     init(init), test(test), update(update), body(body)
 {
@@ -397,14 +529,29 @@ ForStmt::ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body):
 
 void ForStmt::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = make_shared<SymbolTable>(scope);
-    if (init != nullptr) init->setScope(this->scope);
-    if (test != nullptr) test->setScope(this->scope);
-    if (update != nullptr) update->setScope(this->scope);
+    if (init) init->setScope(this->scope);
+    if (test) test->setScope(this->scope);
+    if (update) update->setScope(this->scope);
     body->setScope(this->scope);
 }
+
+void ForStmt::traverse(const Visitor& visitor, Node * parent) {
+    Node::traverse(visitor, this);
+    if (init) init->traverse(visitor, this);
+    if (test) test->traverse(visitor, this);
+    if (update) update->traverse(visitor, this);
+    body->traverse(visitor, this);
+}
+
 
 void CompoundStmt::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = make_shared<SymbolTable>(scope);
     for (auto def: definitions) def->setScope(this->scope);
     for (auto stmt: body) stmt->setScope(this->scope);
+}
+
+void CompoundStmt::traverse(const Visitor& visitor, Node * parent) {
+    execHook(visitor, this, parent);
+    for (auto def: definitions) def->traverse(visitor, this);
+    for (auto stmt: body) stmt->traverse(visitor, this);
 }

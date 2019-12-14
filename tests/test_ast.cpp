@@ -153,6 +153,13 @@ TEST_CASE("AST nodes for statements can be constructed and destroyed", "[ast-stm
 
 }
 
+shared_ptr<FunDef> createFuncDef(string name) {
+    auto compStmt = new CompoundStmt({}, {});
+    auto specifier = new PrimitiveSpecifier("int");
+    auto param = new ParamDec(new PrimitiveSpecifier("char"), new VarDec("a"));
+    auto funcDec = new FunDec(name, { param });
+    return make_shared<FunDef>(specifier, funcDec, compStmt);
+}
 
 TEST_CASE("scopes are set up properly", "[ast-stmt]") {
     auto scope = make_shared<SymbolTable>(nullptr);
@@ -180,16 +187,37 @@ TEST_CASE("scopes are set up properly", "[ast-stmt]") {
     }
 
     SECTION("checking scope for function definition") {
-        auto compStmt = new CompoundStmt({}, {});
-        auto specifier = new PrimitiveSpecifier("int");
-        auto param = new ParamDec(new PrimitiveSpecifier("char"), new VarDec("a"));
-        auto funcDec = new FunDec("foo", { param });
-        FunDef func(specifier, funcDec, compStmt);
-        func.setScope(scope);
+        auto func = createFuncDef("foo");
+        func->setScope(scope);
 
-        CHECK(func.scope->isLowerThan(scope));
-        CHECK(func.scope != scope);
-        CHECK(func.body->scope->isLowerThan(func.declarator->scope));
-        CHECK_FALSE(func.specifier->scope->isLowerThan(func.body->scope));
+        CHECK(func->scope->isLowerThan(scope));
+        CHECK(func->scope != scope);
+        CHECK(func->body->scope->isLowerThan(func->declarator->scope));
+        CHECK_FALSE(func->specifier->scope->isLowerThan(func->body->scope));
     }
+}
+
+
+TEST_CASE("pre-order traversal works", "[ast-visitor]") {
+
+    SECTION("visiting function definition") {
+        auto func = createFuncDef("foo");
+        Visitor visitor {
+            {
+                typeid(FunDef), [](Node * current, Node * parent) {
+                    auto self = dynamic_cast<FunDef*>(current);
+                    CHECK(self->declarator->identifier == "foo");
+                }
+            },
+            {
+                typeid(CompoundStmt), [](Node * current, Node * parent) {
+                    auto self = dynamic_cast<CompoundStmt*>(current);
+                    CHECK(self->definitions.size() == 0);
+                }
+            }
+        };
+        func->traverse(visitor, nullptr);
+    }
+
+    // TODO: traverse nodes of other types
 }
