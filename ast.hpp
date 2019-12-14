@@ -2,7 +2,6 @@
 #define AST_HPP
 
 #include <functional>
-#include <initializer_list>
 #include <list>
 #include <memory>
 #include <string>
@@ -51,16 +50,16 @@ struct VarDec: public Node {
 };
 
 struct ArrDec final: public VarDec {
-    std::vector<unsigned> dimensions;
+    std::vector<int> dimensions;
 
-    ArrDec(const VarDec& declarator, unsigned dim);
+    ArrDec(const VarDec& declarator, int dim);
 };
 
 struct Dec final: public Node {
     VarDec * declarator;
     Exp * init;
 
-    Dec(VarDec * declarator, Exp * init);
+    Dec(VarDec * declarator, Exp * init = nullptr);
     ~Dec();
     void setScope(std::shared_ptr<SymbolTable>) override;
     void traverse(const Visitor& visitor, Node * parent) override;
@@ -197,9 +196,9 @@ struct ArrayExp: public Exp {
 
 struct MemberExp: public Exp {
     Exp * subject;
-    IdExp * member;
+    std::string member;
 
-    MemberExp(Exp * subject, Exp * member);
+    MemberExp(Exp * subject, const std::string& member);
     ~MemberExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
     void traverse(const Visitor& visitor, Node * parent) override;
@@ -251,10 +250,10 @@ struct AssignExp: public Exp {
 };
 
 struct CallExp: public Exp {
-    IdExp * callee;
+    std::string identifier;
     std::vector<Exp*> arguments;
 
-    CallExp(Exp * callee, std::initializer_list<Exp*> arguments);
+    CallExp(const std::string& id, const std::list<Exp*>& arguments = {});
     ~CallExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
     void traverse(const Visitor& visitor, Node * parent) override;

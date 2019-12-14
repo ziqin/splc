@@ -1,22 +1,25 @@
 %{
-    #include <cstdarg>
-    #include <cstdio>
-    #include "cst.hpp"
-    #include "syntax.tab.h"
 
-    static int yycolno = 1;
-    static int prev_state;
+#include <cstdarg>
+#include <cstdio>
+#include "ast.hpp"
+#include "syntax.tab.h"
 
-    #define YY_USER_ACTION              \
-        yylloc.first_line = yylineno;   \
-        yylloc.first_column = yycolno;  \
-        yylloc.last_line = yylineno;    \
-        yycolno += yyleng;              \
-        yylloc.last_column = yycolno;
+static int yycolno = 1;
+static int prev_state;
 
-    static void reportLexErr(int, const char *, ...);
+#define YY_USER_ACTION              \
+    yylloc.first_line = yylineno;   \
+    yylloc.first_column = yycolno;  \
+    yylloc.last_line = yylineno;    \
+    yycolno += yyleng;              \
+    yylloc.last_column = yycolno;
 
-    extern "C" int yylex(void);
+static void reportLexErr(int, const char *, ...);
+static char str2char(const char * val);
+
+extern "C" int yylex(void);
+
 %}
 
 %option yylineno
@@ -46,40 +49,40 @@ fake_id     {digit}({letter}|{digit}|_)+
 known_err   ({fake_dec}|{fake_hex}|{fake_char}|{fake_id})
 
 %%
-{CHAR}          { yylval = new CST::CharNode(yytext); return CHAR; }
-{INT}           { yylval = new CST::IntNode(yytext); return INT; }
-{FLOAT}         { yylval = new CST::FloatNode(yytext); return FLOAT; }
-{TYPE}          { yylval = new CST::StrNode(CST::TYPE, yytext); return TYPE; }
-struct          { yylval = new CST::Node(CST::STRUCT); return STRUCT; }
-if              { yylval = new CST::Node(CST::IF); return IF; }
-else            { yylval = new CST::Node(CST::ELSE); return ELSE; }
-while           { yylval = new CST::Node(CST::WHILE); return WHILE; }
-for             { yylval = new CST::Node(CST::FOR); return FOR; }
-return          { yylval = new CST::Node(CST::RETURN); return RETURN; }
-{ID}            { yylval = new CST::StrNode(CST::ID, yytext); return ID; }  // the order matters
-"."             { yylval = new CST::Node(CST::DOT); return DOT; }
-";"             { yylval = new CST::Node(CST::SEMI); return SEMI; }
-","             { yylval = new CST::Node(CST::COMMA); return COMMA; }
-"="             { yylval = new CST::Node(CST::ASSIGN); return ASSIGN; }
-"<"             { yylval = new CST::Node(CST::LT); return LT; }
-"<="            { yylval = new CST::Node(CST::LE); return LE; }
-">"             { yylval = new CST::Node(CST::GT); return GT; }
-">="            { yylval = new CST::Node(CST::GE); return GE; }
-"!="            { yylval = new CST::Node(CST::NE); return NE; }
-"=="            { yylval = new CST::Node(CST::EQ); return EQ; }
-"+"             { yylval = new CST::Node(CST::PLUS); return PLUS; }
-"-"             { yylval = new CST::Node(CST::MINUS); return MINUS; }
-"*"             { yylval = new CST::Node(CST::MUL); return MUL; }
-"/"             { yylval = new CST::Node(CST::DIV); return DIV; }
-"&&"            { yylval = new CST::Node(CST::AND); return AND; }
-"||"            { yylval = new CST::Node(CST::OR); return OR; }
-"!"             { yylval = new CST::Node(CST::NOT); return NOT; }
-"("             { yylval = new CST::Node(CST::LP); return LP; }
-")"             { yylval = new CST::Node(CST::RP); return RP; }
-"["             { yylval = new CST::Node(CST::LB); return LB; }
-"]"             { yylval = new CST::Node(CST::RB); return RB; }
-"{"             { yylval = new CST::Node(CST::LC); return LC; }
-"}"             { yylval = new CST::Node(CST::RC); return RC; }
+{CHAR}          { yylval.CHAR = str2char(yytext); return CHAR; }
+{INT}           { yylval.INT = std::atoi(yytext); return INT; }
+{FLOAT}         { yylval.FLOAT = std::atof(yytext); return FLOAT; }
+{TYPE}          { yylval.TYPE = new std::string(yytext); return TYPE; }
+struct          { return STRUCT; }
+if              { return IF; }
+else            { return ELSE; }
+while           { return WHILE; }
+for             { return FOR; }
+return          { return RETURN; }
+{ID}            { yylval.ID = new std::string(yytext); return ID; }  // the order matters
+"."             { return DOT; }
+";"             { return SEMI; }
+","             { return COMMA; }
+"="             { return ASSIGN; }
+"<"             { return LT; }
+"<="            { return LE; }
+">"             { return GT; }
+">="            { return GE; }
+"!="            { return NE; }
+"=="            { return EQ; }
+"+"             { return PLUS; }
+"-"             { return MINUS; }
+"*"             { return MUL; }
+"/"             { return DIV; }
+"&&"            { return AND; }
+"||"            { return OR; }
+"!"             { return NOT; }
+"("             { return LP; }
+")"             { return RP; }
+"["             { return LB; }
+"]"             { return RB; }
+"{"             { return LC; }
+"}"             { return RC; }
 
 {whitespace}+   ;
 {line_cmmt}     ;
@@ -100,4 +103,24 @@ static void reportLexErr(int lineno, const char * fmt, ...) {
     fprintf(stderr, "Error type A at Line %d: ", lineno);
     vfprintf(stderr, fmt, args);
     fputc('\n', stderr);
+}
+
+static char str2char(const char * val) {
+    char value;
+    if (val[1] != '\\') {
+        value = val[1];
+    } else { // starts with \x
+        value = 0;
+        for (const char * hex = val + 3; *hex != '\''; ++hex) {
+            value <<= 4;
+            if ('0' <= *hex && *hex <= '9') {
+                value += *hex - '0';
+            } else if ('A' <= *hex && *hex <= 'F') {
+                value += *hex - 'A' + 10;
+            } else if ('a' <= *hex && *hex <= 'f') {
+                value += *hex - 'a' + 10;
+            }
+        }
+    }
+    return value;
 }

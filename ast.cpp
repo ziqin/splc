@@ -25,7 +25,7 @@ void Node::traverse(const Visitor& visitor, Node * parent) {
 
 // ----------------------------- misc --------------------------------
 
-ArrDec::ArrDec(const VarDec& declarator, unsigned dim): VarDec(declarator.identifier) {
+ArrDec::ArrDec(const VarDec& declarator, int dim): VarDec(declarator.identifier) {
     try {
         auto& prefix = dynamic_cast<const ArrDec&>(declarator);
         dimensions = prefix.dimensions;
@@ -312,33 +312,24 @@ void ArrayExp::traverse(const Visitor& visitor, Node * parent) {
 }
 
 
-MemberExp::MemberExp(Exp * subject, Exp * member):
-    subject(subject), member(dynamic_cast<IdExp*>(member))
+MemberExp::MemberExp(Exp * subject, const string& member):
+    subject(subject), member(member)
 {
-    if (this->subject == nullptr) {
-        deleteAll(this->subject, this->member);
-        throw invalid_argument("subject cannot be null");
-    }
-    if (this->member == nullptr) {
-        deleteAll(this->subject, this->member);
-        throw invalid_argument("type of `member` should be IdExp");
-    }
+    if (this->subject == nullptr) throw invalid_argument("subject cannot be null");
 }
 
 MemberExp::~MemberExp() {
-    deleteAll(subject, member);
+    delete subject;
 }
 
 void MemberExp::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     subject->setScope(scope);
-    member->setScope(scope);
 }
 
 void MemberExp::traverse(const Visitor& visitor, Node * parent) {
     execHook(visitor, this, parent);
     subject->traverse(visitor, this);
-    member->traverse(visitor, this);
 }
 
 
@@ -416,13 +407,9 @@ void AssignExp::traverse(const Visitor& visitor, Node * parent) {
 }
 
 
-CallExp::CallExp(Exp * callee, initializer_list<Exp*> arguments):
-    callee(dynamic_cast<IdExp*>(callee)), arguments(arguments)
+CallExp::CallExp(const std::string& id, const list<Exp*>& arguments):
+    identifier(id), arguments(arguments.begin(), arguments.end())
 {
-    if (this->callee == nullptr) {
-        deleteAll(this->callee, this->arguments);
-        throw invalid_argument("type of `callee` should be IdExp");
-    }
     if (hasNull(this->arguments)) {
         deleteAll(this->arguments);
         throw invalid_argument("argument cannot be null");
@@ -430,18 +417,16 @@ CallExp::CallExp(Exp * callee, initializer_list<Exp*> arguments):
 }
 
 CallExp::~CallExp() {
-    deleteAll(callee, arguments);
+    deleteAll(arguments);
 }
 
 void CallExp::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
-    callee->setScope(scope);
     for (auto arg: arguments) arg->setScope(scope);
 }
 
 void CallExp::traverse(const Visitor& visitor, Node * parent) {
     execHook(visitor, this, parent);
-    callee->traverse(visitor, this);
     for (auto arg: arguments) arg->traverse(visitor, this);
 }
 

@@ -71,17 +71,10 @@ TEST_CASE("AST nodes for expressions can be constructed", "[ast-exp]") {
     }
 
     SECTION("constructing a member expression normally") {
-        auto memberExp = make_unique<MemberExp>(new IdExp("name1"), new IdExp("name2"));
+        auto memberExp = make_unique<MemberExp>(new IdExp("name1"), "name2");
 
         CHECK(dynamic_cast<const IdExp*>(memberExp->subject)->identifier == "name1");
-        CHECK(dynamic_cast<const IdExp*>(memberExp->member)->identifier == "name2");
-    }
-
-    SECTION("construcing a member expression with non-id member") {
-        auto name = new IdExp("name");
-        auto charExp = new LiteralExp('c');
-
-        CHECK_THROWS_AS(MemberExp(name, charExp), invalid_argument);
+        CHECK(memberExp->member == "name2");
     }
 
     SECTION("constructing unary expressions") {
@@ -104,10 +97,9 @@ TEST_CASE("AST nodes for expressions can be constructed", "[ast-exp]") {
     }
 
     SECTION("constructing function call expression") {
-        CHECK_NOTHROW(CallExp(new IdExp("f"), { new LiteralExp(1), new LiteralExp(3.14) }));
-        CHECK_NOTHROW(CallExp(new IdExp("f"), {}));
-        CHECK_THROWS_AS(CallExp(nullptr, { new LiteralExp(0) }), invalid_argument);
-        CHECK_THROWS_AS(CallExp(new IdExp("f"), { new LiteralExp(0), nullptr }), invalid_argument);
+        CHECK_NOTHROW(CallExp("f", { new LiteralExp(1), new LiteralExp(3.14) }));
+        CHECK_NOTHROW(CallExp("f", {}));
+        CHECK_THROWS_AS(CallExp("f", { new LiteralExp(0), nullptr }), invalid_argument);
     }
 }
 

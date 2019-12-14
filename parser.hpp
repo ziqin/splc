@@ -4,7 +4,8 @@
 // header file for libparser.a
 
 #include <cstdio>
+#include "ast.hpp"
 
-CST::Node * parseFile(FILE *);
+AST::Program * parseFile(FILE *);
 
 #endif

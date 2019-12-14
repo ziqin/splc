@@ -16,17 +16,17 @@ install: main.elf
 # command line interface
 main.elf: main.o libparser.a libsemantic.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-main.o: main.cpp parser.hpp cst.hpp
+main.o: main.cpp parser.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # lexical analysis & syntax analysis
-libparser.a: cst.o lex.yy.o syntax.tab.o
+libparser.a: ast.o lex.yy.o syntax.tab.o
 	$(AR) rcs $@ $^
-lex.yy.o: lex.yy.c syntax.tab.h cst.hpp
+ast.o: ast.cpp ast.hpp utils.hpp
 	$(CXX) $(CXXFLAGS) -c $<
-syntax.tab.o: syntax.tab.c syntax.tab.h cst.hpp syntax_errs.hpp
+lex.yy.o: lex.yy.c syntax.tab.h ast.hpp
 	$(CXX) $(CXXFLAGS) -c $<
-cst.o: cst.cpp cst.hpp syntax.tab.h
+syntax.tab.o: syntax.tab.c syntax.tab.h ast.hpp syntax_errs.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 lex.yy.c: lex.l
 	$(LEX) $^
@@ -36,8 +36,6 @@ syntax.tab.c syntax.tab.h: syntax.y
 # semantic analysis
 libsemantic.a: ast.o type.o
 	$(AR) rcs $@ $^
-ast.o: ast.cpp ast.hpp utils.hpp
-	$(CXX) $(CXXFLAGS) -c $<
 type.o: type.cpp type.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 

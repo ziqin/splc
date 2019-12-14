@@ -1,9 +1,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
-#include "cst.hpp"
 #include "parser.hpp"
-#include "ast.hpp"
 
 using namespace std;
 
@@ -42,9 +40,9 @@ int main(int argc, const char ** argv) {
     }
 
     // parsing
-    unique_ptr<CST::Node> parseTree(parseFile(srcFile));
+    unique_ptr<AST::Program> ast(parseFile(srcFile));
     fclose(srcFile);
-    if (!parseTree) { // lexical/syntax error
+    if (!ast) { // lexical/syntax error
         exit(PARSING_ERR);
     }
 
@@ -54,11 +52,8 @@ int main(int argc, const char ** argv) {
         cerr << "Failed to open file " << targetPath << " to write" << endl;
         exit(IO_ERR);
     }
-    parseTree->fprint(targetFile, 0);
+    // parseTree->fprint(targetFile, 0);
     fclose(targetFile);
-
-    // concrete syntax tree -> abstract syntax tree
-    unique_ptr<AST::Program> program(new AST::Program(*parseTree));
 
     return 0;
 }

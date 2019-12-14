@@ -1,23 +1,36 @@
 %{
-    #include <cstdio>
-    #include "cst.hpp"
-    #include "parser.hpp"
-    #include "syntax_errs.hpp"
 
-    extern "C" int yylex(void);
-    static void yyerror(const char *);
-    static void reportSynErr(int, SyntaxErr);
+#include <cstdio>
+#include <list>
+#include <string>
+#include "ast.hpp"
+#include "utils.hpp"
+#include "syntax_errs.hpp"
 
-    extern FILE * yyin;
-    static CST::Node * program;
-    static bool hasErr;
+extern "C" int yylex(void);
+static void yyerror(const char *);
+static void reportSynErr(int, SyntaxErr);
+AST::Program * parseFile(FILE *);
+
+extern FILE * yyin;
+static AST::Program * program;
+static bool hasErr;
+
 %}
 
 %locations
 
-%define api.value.type { CST::Node * }
+%define api.value.type union
 
-%token INT FLOAT TYPE ID CHAR STRUCT IF ELSE WHILE FOR RETURN DOT SEMI COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT LP RP LB RB LC RC
+%token <int> INT
+%token <double> FLOAT
+%token <char> CHAR
+%token <std::string *> TYPE
+%token <std::string *> ID
+%token STRUCT
+%token IF ELSE WHILE FOR RETURN SEMI
+%token DOT COMMA ASSIGN LT LE GT GE NE EQ PLUS MINUS MUL DIV AND OR NOT
+%token LP RP LB RB LC RC
 %token LEX_ERR LEX_ERR_BLK
 
 %nonassoc ERROR
@@ -38,141 +51,402 @@
 %nonassoc INT FLOAT CHAR ID LEX_ERR
 %left LP RP LB RB DOT
 
+%type <AST::Program*> Program
+%type <std::list<AST::ExtDef*>*> ExtDefList
+%type <AST::ExtDef*> ExtDef
+%type <std::list<AST::VarDec*>*> ExtDecList
+%type <AST::Specifier*> Specifier
+%type <AST::Specifier*> StructSpecifier
+%type <AST::VarDec*> VarDec
+%type <AST::FunDec*> FunDec
+%type <std::list<AST::ParamDec*>*> VarList
+%type <AST::ParamDec*> ParamDec
+%type <AST::CompoundStmt*> CompSt
+%type <std::list<AST::Stmt*>*> StmtList
+%type <AST::Stmt*> Stmt
+%type <std::list<AST::Def*>*> DefList
+%type <AST::Def*> Def
+%type <std::list<AST::Dec*>*> DecList
+%type <AST::Dec*> Dec
+%type <AST::Exp*> Exp
+%type <std::list<AST::Exp*>*> Args
+
 %%
 /* high-level definition */
-Program: ExtDefList                 { program = $$ = new CST::NtNode(CST::Program, &@$, { $1 }); }
+Program:
+    ExtDefList {
+        program = $$ = new AST::Program(*$1);
+        delete $1;
+        }
     ;
-ExtDefList: ExtDef ExtDefList       { $$ = new CST::NtNode(CST::ExtDefList, &@$, { $1, $2 }); }
-    | /* empty */                   { $$ = new CST::NtNode(CST::ExtDefList, &@$, {}); }
-    | LEX_ERR_BLK                   { $$ = nullptr; hasErr = true; }
+ExtDefList:
+    ExtDef ExtDefList {
+        $2->push_front($1);
+        $$ = $2;
+        }
+    | /* empty */ {
+        $$ = new std::list<AST::ExtDef*>;
+        }
+    | LEX_ERR_BLK {
+        $$ = nullptr;
+        hasErr = true;
+        }
     ;
-ExtDef: Specifier ExtDecList SEMI            { $$ = new CST::NtNode(CST::ExtDef, &@$, { $1, $2, $3 }); }
-    | Specifier SEMI                         { $$ = new CST::NtNode(CST::ExtDef, &@$, { $1, $2 }); }
-    | Specifier FunDec CompSt                { $$ = new CST::NtNode(CST::ExtDef, &@$, { $1, $2, $3 }); }
-    | Specifier ExtDecList       %prec ERROR { $$ = nullptr; reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
-    | Specifier                  %prec ERROR { $$ = nullptr; reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
+ExtDef:
+    Specifier ExtDecList SEMI {
+        $$ = new AST::ExtVarDef($1, *$2);
+        delete $2;
+        }
+    | Specifier SEMI {
+        $$ = new AST::StructDef($1);
+        }
+    | Specifier FunDec CompSt {
+        $$ = new AST::FunDef($1, $2, $3);
+        }
+    | Specifier ExtDecList %prec ERROR {
+        $$ = nullptr;
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        deleteAll($1, *$2, $2);
+        }
+    | Specifier %prec ERROR {
+        $$ = nullptr;
+        reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
+        delete $1;
+        }
     ;
-ExtDecList: VarDec               { $$ = new CST::NtNode(CST::ExtDecList, &@$, { $1 }); }
-    | VarDec COMMA ExtDecList    { $$ = new CST::NtNode(CST::ExtDecList, &@$, { $1, $2, $3} ); }
+ExtDecList:
+    VarDec {
+        $$ = new std::list<AST::VarDec*>{ $1 };
+        }
+    | VarDec COMMA ExtDecList {
+        $3->push_front($1);
+        $$ = $3;
+        }
     ;
 
 /* specifier */
-Specifier: TYPE                             { $$ = new CST::NtNode(CST::Specifier, &@$, { $1 }); }
-    | StructSpecifier                       { $$ = new CST::NtNode(CST::Specifier, &@$, { $1 }); }
+Specifier:
+    TYPE {
+        $$ = new AST::PrimitiveSpecifier(*$1);
+        delete $1;
+        }
+    | StructSpecifier {
+        $$ = $1;
+        }
     ;
-StructSpecifier: STRUCT ID LC DefList RC    { $$ = new CST::NtNode(CST::StructSpecifier, &@$, { $1, $2, $3, $4, $5 }); }
-    | STRUCT ID                             { $$ = new CST::NtNode(CST::StructSpecifier, &@$, { $1, $2 }); }
-    // | STRUCT ID LC DefList      %prec ERROR { $$ = nullptr; delete $1; delete $2; delete $3; delete $4; reportSynErr(@4.last_line, SYNTAX_ERR_MISSING_RC); }
+StructSpecifier:
+    STRUCT ID LC DefList RC {
+        $$ = new AST::StructSpecifier(*$2, *$4);
+        deleteAll($2, $4);
+        }
+    | STRUCT ID {
+        $$ = new AST::StructSpecifier(*$2);
+        delete $2;
+        }
     ;
 
 /* declarator */
-VarDec: ID                      { $$ = new CST::NtNode(CST::VarDec, &@$, { $1 }); }
-    | VarDec LB INT RB          { $$ = new CST::NtNode(CST::VarDec, &@$, { $1, $2, $3, $4 }); }
-    | LEX_ERR       %prec ERROR { $$ = nullptr; hasErr = true; }
-    | VarDec LB INT %prec ERROR { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB); }
+VarDec:
+    ID {
+        $$ = new AST::VarDec(*$1);
+        delete $1;
+        }
+    | VarDec LB INT RB {
+        $$ = new AST::ArrDec(*$1, $3);
+        delete $1;
+        }
+    | LEX_ERR %prec ERROR {
+        $$ = nullptr;
+        hasErr = true;
+        }
+    | VarDec LB INT %prec ERROR {
+        $$ = nullptr;
+        delete $1;
+        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
+        }
     ;
-FunDec: ID LP VarList RP        { $$ = new CST::NtNode(CST::FunDec, &@$, { $1, $2, $3, $4 }); }
-    | ID LP RP                  { $$ = new CST::NtNode(CST::FunDec, &@$, { $1, $2, $3 }); }
-    | ID LP VarList %prec ERROR { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP         %prec ERROR { $$ = nullptr; delete $1; delete $2; reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | ID VarList RP %prec ERROR { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@2.first_line, SYNTAX_ERR_MISSING_LP); }
-    | ID RP         %prec ERROR { $$ = nullptr; delete $1; delete $2; reportSynErr(@2.first_line, SYNTAX_ERR_MISSING_LP); }
+FunDec:
+    ID LP VarList RP {
+        $$ = new AST::FunDec(*$1, *$3);
+        deleteAll($1, $3);
+        }
+    | ID LP RP {
+        $$ = new AST::FunDec(*$1);
+        }
+    | ID LP VarList %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, *$3, $3);
+        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
+        }
+    | ID LP %prec ERROR {
+        $$ = nullptr;
+        delete $1;
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        }
+    | ID RP %prec ERROR {
+        $$ = nullptr;
+        delete $1;
+        reportSynErr(@2.first_line, SYNTAX_ERR_MISSING_LP);
+        }
     ;
-VarList: ParamDec COMMA VarList { $$ = new CST::NtNode(CST::VarList, &@$, { $1, $2, $3 }); }
-    | ParamDec                  { $$ = new CST::NtNode(CST::VarList, &@$, { $1 }); }
+VarList:
+    ParamDec COMMA VarList {
+        $3->push_front($1);
+        $$ = $3;
+        }
+    | ParamDec {
+        $$ = new std::list<AST::ParamDec*>{ $1 };
+        }
     ;
-ParamDec: Specifier VarDec      { $$ = new CST::NtNode(CST::ParamDec, &@$, { $1, $2 }); }
+ParamDec:
+    Specifier VarDec {
+        $$ = new AST::ParamDec($1, $2);
+        }
     ;
 
 /* statement */
-CompSt: LC DefList StmtList RC              { $$ = new CST::NtNode(CST::CompSt, &@$, { $1, $2, $3, $4 }); }
-    // | LC DefList StmtList       %prec ERROR { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RC); }
+CompSt:
+    LC DefList StmtList RC {
+        $$ = new AST::CompoundStmt(*$2, *$3);
+        deleteAll($2, $3);
+        }
     ;
-StmtList: Stmt StmtList                     { $$ = new CST::NtNode(CST::StmtList, &@$, { $1, $2 }); }
-    | /* empty */                           { $$ = new CST::NtNode(CST::StmtList, &@$, {}); }
-    | Stmt Def StmtList         %prec ERROR { $$ = nullptr; delete $1; delete $2; reportSynErr(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER); }
+StmtList:
+    Stmt StmtList {
+        $2->push_front($1);
+        $$ = $2;
+        }
+    | /* empty */ {
+        $$ = new std::list<AST::Stmt*>();
+        }
+    | Stmt Def StmtList %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, $2, *$3, $3);
+        reportSynErr(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER);
+        }
     ;
-Stmt: Exp SEMI                              { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2 }); }
-    | CompSt                                { $$ = new CST::NtNode(CST::Stmt, &@$, { $1 }); }
-    | RETURN Exp SEMI                       { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3 }); }
-    | IF LP Exp RP Stmt %prec LOWER_ELSE    { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, $5 }); }
-    | IF LP Exp RP Stmt ELSE Stmt           { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, $5, $6, $7 }); }
-    | WHILE LP Exp RP Stmt                  { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, $5 }); }
-    | FOR LP SEMI SEMI RP Stmt              { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, nullptr, $3, nullptr, $4, nullptr, $5, $6 }); }
-    | FOR LP Exp SEMI SEMI RP Stmt          { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, nullptr, $5, nullptr, $6, $7 }); }
-    | FOR LP SEMI Exp SEMI RP Stmt          { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, nullptr, $3, $4, $5, nullptr, $6, $7 }); }
-    | FOR LP SEMI SEMI Exp RP Stmt          { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, nullptr, $3, nullptr, $4, $5, $6, $7 }); }
-    | FOR LP Exp SEMI Exp SEMI RP Stmt      { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, $5, $6, nullptr, $7, $8 }); }
-    | FOR LP Exp SEMI SEMI Exp RP Stmt      { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, nullptr, $5, $6, $7, $8 }); }
-    | FOR LP SEMI Exp SEMI Exp RP Stmt      { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, nullptr, $3, $4, $5, $6, $7, $8 }); }
-    | FOR LP Exp SEMI Exp SEMI Exp RP Stmt  { $$ = new CST::NtNode(CST::Stmt, &@$, { $1, $2, $3, $4, $5, $6, $7, $8, $9 }); }
-    | Exp                       %prec ERROR { $$ = nullptr; delete $1; reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI); }
-    | RETURN Exp                %prec ERROR { $$ = nullptr; delete $1; delete $2; reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
-    | LEX_ERR_BLK               %prec ERROR { $$ = nullptr; hasErr = true; }
-    | error SEMI                %prec ERROR { $$ = nullptr; delete $2; }
-    // TODO:
-    // | IF LP Exp Stmt      %prec LOWER_ERROR { $$ = nullptr; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | IF LP Exp Stmt ELSE Stmt  %prec ERROR { $$ = nullptr; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    // | WHILE LP Exp Stmt         %prec ERROR { $$ = nullptr; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP); }
+Stmt:
+    Exp SEMI {
+        $$ = new AST::ExpStmt($1);
+        }
+    | CompSt {
+        $$ = $1;
+        }
+    | RETURN Exp SEMI {
+        $$ = new AST::ReturnStmt($2);
+        }
+    | IF LP Exp RP Stmt %prec LOWER_ELSE {
+        $$ = new AST::IfStmt($3, $5);
+        }
+    | IF LP Exp RP Stmt ELSE Stmt {
+        $$ = new AST::IfStmt($3, $5, $7);
+        }
+    | WHILE LP Exp RP Stmt {
+        $$ = new AST::WhileStmt($3, $5);
+        }
+    | FOR LP SEMI SEMI RP Stmt {
+        $$ = new AST::ForStmt(nullptr, nullptr, nullptr, $6);
+        }
+    | FOR LP Exp SEMI SEMI RP Stmt {
+        $$ = new AST::ForStmt($3, nullptr, nullptr, $7);
+        }
+    | FOR LP SEMI Exp SEMI RP Stmt {
+        $$ = new AST::ForStmt(nullptr, $4, nullptr, $7);
+        }
+    | FOR LP SEMI SEMI Exp RP Stmt {
+        $$ = new AST::ForStmt(nullptr, nullptr, $5, $7);
+        }
+    | FOR LP Exp SEMI Exp SEMI RP Stmt {
+        $$ = new AST::ForStmt($3, $5, nullptr, $8);
+        }
+    | FOR LP Exp SEMI SEMI Exp RP Stmt {
+        $$ = new AST::ForStmt($3, nullptr, $6, $8);
+        }
+    | FOR LP SEMI Exp SEMI Exp RP Stmt {
+        $$ = new AST::ForStmt(nullptr, $4, $6, $8);
+        }
+    | FOR LP Exp SEMI Exp SEMI Exp RP Stmt {
+        $$ = new AST::ForStmt($3, $5, $7, $9);
+        }
+    | Exp %prec ERROR {
+        $$ = nullptr;
+        delete $1;
+        reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
+        }
+    | RETURN Exp %prec ERROR {
+        $$ = nullptr;
+        delete $2;
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        }
+    | LEX_ERR_BLK %prec ERROR {
+        $$ = nullptr;
+        hasErr = true;
+        }
+    | error SEMI %prec ERROR {
+        $$ = nullptr;
+        }
     ;
 
 /* local definition */
-DefList: Def DefList            { $$ = new CST::NtNode(CST::DefList, &@$, { $1, $2 }); }
-    | /* empty */               { $$ = new CST::NtNode(CST::DefList, &@$, {}); }
+DefList:
+    Def DefList {
+        $2->push_front($1);
+        $$ = $2;
+        }
+    | /* empty */ {
+        $$ = new std::list<AST::Def*>();
+        }
     ;
-Def: Specifier DecList SEMI               { $$ = new CST::NtNode(CST::Def, &@$, { $1, $2, $3 }); }
-    | Specifier DecList       %prec ERROR { $$ = nullptr; delete $1; delete $2; 
-                                            reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI); }
+Def:
+    Specifier DecList SEMI {
+        $$ = new AST::Def($1, *$2);
+        delete $2;
+        }
+    | Specifier DecList %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, *$2, $2);
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        }
     ;
-DecList: Dec                    { $$ = new CST::NtNode(CST::DecList, &@$, { $1 }); }
-    | Dec COMMA DecList         { $$ = new CST::NtNode(CST::DecList, &@$, { $1, $2, $3 }); }
+DecList:
+    Dec {
+        $$ = new std::list<AST::Dec*>{ $1 };
+        }
+    | Dec COMMA DecList {
+        $3->push_front($1);
+        $$ = $3;
+        }
     ;
-Dec: VarDec                     { $$ = new CST::NtNode(CST::Dec, &@$, { $1 }); }
-    | VarDec ASSIGN Exp         { $$ = new CST::NtNode(CST::Dec, &@$, { $1, $2, $3 }); }
+Dec:
+    VarDec {
+        $$ = new AST::Dec($1);
+        }
+    | VarDec ASSIGN Exp {
+        $$ = new AST::Dec($1, $3);
+        }
     ;
 
 /* Expression */
-Exp: Exp ASSIGN Exp                 { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp AND Exp                   { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp OR Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp LT Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp LE Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp GT Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp GE Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp NE Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp EQ Exp                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp PLUS Exp                  { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp MINUS Exp                 { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp MUL Exp                   { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp DIV Exp                   { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | LP Exp RP                     { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | PLUS Exp         %prec UPLUS  { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2 }); }
-    | MINUS Exp        %prec UMINUS { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2 }); }
-    | NOT Exp          %prec NOT    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2 }); }
-    | ID LP Args RP                 { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3, $4 }); }
-    | ID LP RP                      { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | Exp LB Exp RB                 { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3, $4 }); }
-    | Exp DOT ID                    { $$ = new CST::NtNode(CST::Exp, &@$, { $1, $2, $3 }); }
-    | ID                            { $$ = new CST::NtNode(CST::Exp, &@$, { $1 }); }
-    | INT                           { $$ = new CST::NtNode(CST::Exp, &@$, { $1 }); }
-    | FLOAT                         { $$ = new CST::NtNode(CST::Exp, &@$, { $1 }); }
-    | CHAR                          { $$ = new CST::NtNode(CST::Exp, &@$, { $1 }); }
-    | LEX_ERR                       { $$ = nullptr; hasErr = true; }
-    | Exp LEX_ERR Exp  %prec ERROR  { $$ = nullptr; hasErr = true; }
-    | LP Exp           %prec ERROR  { $$ = nullptr; delete $1; delete $2; reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP Args       %prec ERROR  { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP); }
-    | ID LP            %prec ERROR  { $$ = nullptr; delete $1; delete $2; reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP); }
-    | Exp LB Exp       %prec ERROR  { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB); }
-    // TODO:
-    // | Exp RP           %prec ERROR  { $$ = nullptr; delete $1; delete $2; reportSynErr(@1.first_line, SYNTAX_ERR_MISSING_LP); }
-    // | ID Args RP       %prec ERROR  { $$ = nullptr; delete $1; delete $2; delete $3; reportSynErr(@1.last_line, SYNTAX_ERR_MISSING_LP); }
-    // | ID RP            %prec ERROR  { $$ = nullptr; delete $1; delete $2; reportSynErr(@1.last_line, SYNTAX_ERR_MISSING_LP); }
+Exp:
+    Exp ASSIGN Exp {
+        $$ = new AST::AssignExp($1, $3);
+        }
+    | Exp AND Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_AND, $3);
+        }
+    | Exp OR Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_OR, $3);
+        }
+    | Exp LT Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_LT, $3);
+        }
+    | Exp LE Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_LE, $3);
+        }
+    | Exp GT Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_GT, $3);
+        }
+    | Exp GE Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_GE, $3);
+        }
+    | Exp NE Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_NE, $3);
+        }
+    | Exp EQ Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_EQ, $3);
+        }
+    | Exp PLUS Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_PLUS, $3);
+        }
+    | Exp MINUS Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_MINUS, $3);
+        }
+    | Exp MUL Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_MUL, $3);
+        }
+    | Exp DIV Exp {
+        $$ = new AST::BinaryExp($1, AST::OPT_DIV, $3);
+        }
+    | LP Exp RP {  // FIXME: recover original structure?
+        $$ = $2;
+        }
+    | PLUS Exp %prec UPLUS {
+        $$ = new AST::UnaryExp(AST::OPT_PLUS, $2);
+        }
+    | MINUS Exp %prec UMINUS {
+        $$ = new AST::UnaryExp(AST::OPT_MINUS, $2);
+        }
+    | NOT Exp %prec NOT {
+        $$ = new AST::UnaryExp(AST::OPT_NOT, $2);
+        }
+    | ID LP Args RP {
+        $$ = new AST::CallExp(*$1, *$3);
+        deleteAll($1, $3);
+        }
+    | ID LP RP {
+        $$ = new AST::CallExp(*$1);
+        delete $1;
+        }
+    | Exp LB Exp RB {
+        $$ = new AST::ArrayExp($1, $3);
+        }
+    | Exp DOT ID {
+        $$ = new AST::MemberExp($1, *$3);
+        delete $3;
+        }
+    | ID {
+        $$ = new AST::IdExp(*$1);
+        delete $1;
+        }
+    | INT {
+        $$ = new AST::LiteralExp($1);
+        }
+    | FLOAT {
+        $$ = new AST::LiteralExp($1);
+        }
+    | CHAR {
+        $$ = new AST::LiteralExp($1);
+        }
+    | LEX_ERR {
+        $$ = nullptr;
+        hasErr = true;
+        }
+    | Exp LEX_ERR Exp  %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, $3);
+        hasErr = true;
+        }
+    | LP Exp %prec ERROR {
+        $$ = nullptr;
+        delete $2;
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        }
+    | ID LP Args %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, *$3, $3);
+        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
+        }
+    | ID LP %prec ERROR {
+        $$ = nullptr;
+        delete $1;
+        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        }
+    | Exp LB Exp %prec ERROR {
+        $$ = nullptr;
+        deleteAll($1, $3);
+        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
+        }
     ;
 
-Args: Exp COMMA Args    %prec ARGS { $$ = new CST::NtNode(CST::Args, &@$, { $1, $2, $3 }); }
-    | Exp               %prec ARGS { $$ = new CST::NtNode(CST::Args, &@$, { $1 }); }
+Args:
+    Exp COMMA Args %prec ARGS {
+        $3->push_front($1);
+        $$ = $3;
+        }
+    | Exp %prec ARGS {
+        $$ = new std::list<AST::Exp*>{ $1 };
+        }
     ;
-
 %%
 
 static void yyerror(const char * msg) {
@@ -187,7 +461,7 @@ static void reportSynErr(int lineno, SyntaxErr err) {
     hasErr = true;
 }
 
-CST::Node * parseFile(FILE * file) {
+AST::Program * parseFile(FILE * file) {
     // yydebug = 1;
     hasErr = false;
     yyin = file;
