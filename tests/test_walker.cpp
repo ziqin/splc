@@ -2,6 +2,7 @@
 #include <memory>
 #include "ast.hpp"
 #include "ast_walker.hpp"
+#include "semantic.hpp"
 
 using namespace std;
 using namespace AST;
@@ -21,8 +22,7 @@ public:
     }
 };
 
-// FIXME:
-TEST_CASE("traversal walkers work", "[ast-visitor]") {
+TEST_CASE("simple walker works", "[ast-visitor]") {
 
     SECTION("visiting function definition") {
         auto compStmt = new CompoundStmt({}, {});

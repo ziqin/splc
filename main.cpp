@@ -49,7 +49,8 @@ int main(int argc, const char ** argv) {
     }
 
     auto dumpWalker = make_unique<AST::DumpWalker>(std::cout);
-    ast->traverse({ dumpWalker.get() }, nullptr);
+    auto scopeSetter = make_unique<AST::ScopeSetter>();
+    ast->traverse({ dumpWalker.get(), scopeSetter.get() }, nullptr);
 
     return 0;
 }

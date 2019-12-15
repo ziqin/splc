@@ -135,7 +135,7 @@ public:
         END_ENTER_HOOK(CallExp);
     }
 
-    std::optional<Hook> getPreHook(std::type_index type) {
+    std::optional<Hook> getPreHook(std::type_index type) override {
         auto dedicatedHook = Walker::getPreHook(type);
         return dedicatedHook ? dedicatedHook : [this](Node * self, Node * parent) {
             this->out(self, parent) << std::endl;

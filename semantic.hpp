@@ -2,17 +2,18 @@
 #define SEMANTIC_HPP
 
 #include "ast.hpp"
+
+#define ENABLE_HOOK_MACRO
 #include "ast_walker.hpp"
 
 namespace AST {
 
-class DumpWalker: public Walker {
-private:
-    std::unordered_map<unsigned, int> indent;
-
+class ScopeSetter: public Walker {
 public:
-    std::optional<Hook> getPreHook(std::type_index type) override;
+    ScopeSetter();
+    std::optional<Hook> getPreHook(std::type_index) override;
 };
+
 
 }
 

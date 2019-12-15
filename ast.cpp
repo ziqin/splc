@@ -31,10 +31,6 @@ Node::Node() {
     id = gid++;
 }
 
-void Node::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-}
-
 void Node::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     execPostHook(walkers, this, parent);
@@ -67,11 +63,6 @@ Dec::~Dec() {
     deleteAll(declarator, init);
 }
 
-void Dec::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    declarator->setScope(scope);
-    if (init) init->setScope(scope);
-}
 
 void Dec::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -92,12 +83,6 @@ Def::Def(Specifier * specifier, const list<Dec*>& decList):
 
 Def::~Def() {
     deleteAll(specifier, declarations);
-}
-
-void Def::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    specifier->setScope(scope);
-    for (auto dec: declarations) dec->setScope(scope);
 }
 
 void Def::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -121,12 +106,6 @@ ParamDec::~ParamDec() {
     deleteAll(specifier, declarator);
 }
 
-void ParamDec::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    specifier->setScope(scope);
-    declarator->setScope(scope);
-}
-
 void ParamDec::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     specifier->traverse(walkers, this);
@@ -146,11 +125,6 @@ FunDec::FunDec(const string& id, const list<ParamDec*>& varList):
 
 FunDec::~FunDec() {
     deleteAll(parameters);
-}
-
-void FunDec::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    for (auto para: parameters) para->setScope(scope);
 }
 
 void FunDec::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -181,11 +155,6 @@ StructSpecifier::~StructSpecifier() {
     deleteAll(definitions);
 }
 
-void StructSpecifier::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    for (auto def: definitions) def->setScope(scope);
-}
-
 void StructSpecifier::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     for (auto def: definitions) def->traverse(walkers, this);
@@ -206,11 +175,6 @@ ExtVarDef::~ExtVarDef() {
     deleteAll(specifier, varDecs);
 }
 
-void ExtVarDef::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    specifier->setScope(scope);
-    for (auto dec: varDecs) dec->setScope(scope);
-}
 
 void ExtVarDef::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -227,11 +191,6 @@ StructDef::StructDef(Specifier * specifier):
 
 StructDef::~StructDef() {
     delete specifier;
-}
-
-void StructDef::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    specifier->setScope(scope);
 }
 
 void StructDef::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -254,13 +213,6 @@ FunDef::~FunDef() {
     deleteAll(specifier, declarator, body);
 }
 
-void FunDef::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = make_shared<SymbolTable>(scope);
-    specifier->setScope(scope);
-    declarator->setScope(this->scope);
-    body->setScope(this->scope);
-}
-
 void FunDef::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     specifier->traverse(walkers, this);
@@ -281,11 +233,6 @@ Program::Program(const list<ExtDef*>& extDefList):
 
 Program::~Program() {
     deleteAll(extDefs);
-}
-
-void Program::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    for (auto def: extDefs) def->setScope(scope);
 }
 
 void Program::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -330,12 +277,6 @@ ArrayExp::~ArrayExp() {
     deleteAll(subject, index);
 }
 
-void ArrayExp::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    subject->setScope(scope);
-    index->setScope(scope);
-}
-
 void ArrayExp::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     subject->traverse(walkers, this);
@@ -354,10 +295,6 @@ MemberExp::~MemberExp() {
     delete subject;
 }
 
-void MemberExp::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    subject->setScope(scope);
-}
 
 void MemberExp::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -377,11 +314,6 @@ UnaryExp::UnaryExp(Operator opt, Exp * argument):
 
 UnaryExp::~UnaryExp() {
     delete argument;
-}
-
-void UnaryExp::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    argument->setScope(scope);
 }
 
 void UnaryExp::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -404,12 +336,6 @@ BinaryExp::~BinaryExp() {
     deleteAll(left, right);
 }
 
-void BinaryExp::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    left->setScope(scope);
-    right->setScope(scope);
-}
-
 void BinaryExp::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     left->traverse(walkers, this);
@@ -429,11 +355,6 @@ AssignExp::~AssignExp() {
     deleteAll(left, right);
 }
 
-void AssignExp::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    left->setScope(scope);
-    right->setScope(scope);
-}
 
 void AssignExp::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -456,10 +377,6 @@ CallExp::~CallExp() {
     deleteAll(arguments);
 }
 
-void CallExp::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    for (auto arg: arguments) arg->setScope(scope);
-}
 
 void CallExp::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -474,22 +391,12 @@ ExpStmt::ExpStmt(Exp * expression): expression(expression) {
     if (expression == nullptr) throw invalid_argument("expression cannot be null");
 }
 
-void ExpStmt::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    expression->scope = scope;
-}
-
 void ExpStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     expression->traverse(walkers, this);
     execPostHook(walkers, this, parent);
 }
 
-
-void ReturnStmt::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    if (argument) argument->setScope(scope);
-}
 
 void ReturnStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
@@ -507,13 +414,6 @@ IfStmt::IfStmt(Exp * test, Stmt * consequent, Stmt * alternate):
     }
 }
 
-void IfStmt::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    test->setScope(scope);
-    consequent->setScope(scope);
-    if (alternate) alternate->setScope(scope);
-}
-
 void IfStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     test->traverse(walkers, this);
@@ -528,12 +428,6 @@ WhileStmt::WhileStmt(Exp * test, Stmt * body): test(test), body(body) {
         deleteAll(test, body);
         throw invalid_argument("test/body cannot be null");
     }
-}
-
-void WhileStmt::setScope(shared_ptr<SymbolTable> scope) {
-    this->scope = scope;
-    test->setScope(scope);
-    body->setScope(scope);
 }
 
 void WhileStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -553,14 +447,6 @@ ForStmt::ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body):
     }
 }
 
-void ForStmt::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = make_shared<SymbolTable>(scope);
-    if (init) init->setScope(this->scope);
-    if (test) test->setScope(this->scope);
-    if (update) update->setScope(this->scope);
-    body->setScope(this->scope);
-}
-
 void ForStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     if (init) init->traverse(walkers, this);
@@ -570,12 +456,6 @@ void ForStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPostHook(walkers, this, parent);
 }
 
-
-void CompoundStmt::setScope(std::shared_ptr<SymbolTable> scope) {
-    this->scope = make_shared<SymbolTable>(scope);
-    for (auto def: definitions) def->setScope(this->scope);
-    for (auto stmt: body) stmt->setScope(this->scope);
-}
 
 void CompoundStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
