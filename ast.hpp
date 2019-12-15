@@ -12,7 +12,11 @@
 #include "type.hpp"
 
 
+struct YYLTYPE;
+
 namespace AST {
+
+class Walker;
 
 struct Node;
 struct Program;
@@ -29,15 +33,24 @@ struct Def;
 struct Dec;
 struct Exp;
 
-using Visitor = std::unordered_map<std::type_index, std::function<void(Node*,Node*)>>;
+struct Location {
+    struct Position {
+        int line, column;
+    } start, end;
+
+    Location() {
+        start.line = end.line = 0;
+        start.column = end.column = 0;
+    }
+};
 
 struct Node {
-    // TODO: source location
-
+    Location loc;
     std::shared_ptr<SymbolTable> scope;
     virtual ~Node() {}
     virtual void setScope(std::shared_ptr<SymbolTable>);
-    virtual void traverse(const Visitor& visitor, Node * parent);
+    virtual void traverse(const std::vector<Walker*>& walkers, Node * parent);
+    void setLocation(const YYLTYPE * loc);
 };
 
 
@@ -62,7 +75,7 @@ struct Dec final: public Node {
     Dec(VarDec * declarator, Exp * init = nullptr);
     ~Dec();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct Def: public Node {
@@ -72,7 +85,7 @@ struct Def: public Node {
     Def(Specifier * specifier, const std::list<Dec*>& decList);
     ~Def();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct ParamDec: public Node {
@@ -82,7 +95,7 @@ struct ParamDec: public Node {
     ParamDec(Specifier * specifier, VarDec * declarator);
     ~ParamDec();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct FunDec: public Node {
@@ -92,7 +105,7 @@ struct FunDec: public Node {
     FunDec(const std::string& id, const std::list<ParamDec*>& varList = {});
     ~FunDec();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct Specifier: public Node {};
@@ -110,7 +123,7 @@ struct StructSpecifier final: public Specifier {
     StructSpecifier(const std::string& id, const std::list<Def*>& defList = {});
     ~StructSpecifier();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct ExtDef: public Node {};
@@ -122,7 +135,7 @@ struct ExtVarDef final: public ExtDef {
     ExtVarDef(Specifier * specifier, const std::list<VarDec*>& extDecList);
     ~ExtVarDef();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct StructDef final: public ExtDef {
@@ -131,7 +144,7 @@ struct StructDef final: public ExtDef {
     StructDef(Specifier * specifier);
     ~StructDef();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct FunDef final: public ExtDef {
@@ -142,7 +155,7 @@ struct FunDef final: public ExtDef {
     FunDef(Specifier * specifier, FunDec * declarator, CompoundStmt * body);
     ~FunDef();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct Program final: public Node {
@@ -151,7 +164,7 @@ struct Program final: public Node {
     Program(const std::list<ExtDef*>& extDefList);
     ~Program();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 
@@ -191,7 +204,7 @@ struct ArrayExp: public Exp {
     ArrayExp(Exp * subject, Exp * index);
     ~ArrayExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct MemberExp: public Exp {
@@ -201,7 +214,7 @@ struct MemberExp: public Exp {
     MemberExp(Exp * subject, const std::string& member);
     ~MemberExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 enum Operator {
@@ -227,7 +240,7 @@ struct UnaryExp: public Exp {
     UnaryExp(Operator opt, Exp * argument);
     ~UnaryExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct BinaryExp: public Exp {
@@ -237,7 +250,7 @@ struct BinaryExp: public Exp {
     BinaryExp(Exp * left, Operator opt, Exp * right);
     ~BinaryExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct AssignExp: public Exp {
@@ -246,7 +259,7 @@ struct AssignExp: public Exp {
     AssignExp(Exp * left, Exp * right);
     ~AssignExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct CallExp: public Exp {
@@ -256,7 +269,7 @@ struct CallExp: public Exp {
     CallExp(const std::string& id, const std::list<Exp*>& arguments = {});
     ~CallExp();
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 
@@ -272,7 +285,7 @@ struct ExpStmt final: public Stmt {
         delete expression;
     }
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct ReturnStmt final: public Stmt {
@@ -283,7 +296,7 @@ struct ReturnStmt final: public Stmt {
         delete argument;
     }
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct IfStmt final: public Stmt {
@@ -292,7 +305,7 @@ struct IfStmt final: public Stmt {
 
     IfStmt(Exp * test, Stmt * consequent, Stmt * alternate = nullptr);
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct WhileStmt final: public Stmt {
@@ -301,7 +314,7 @@ struct WhileStmt final: public Stmt {
 
     WhileStmt(Exp * test, Stmt * body);
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct ForStmt final: public Stmt {
@@ -310,7 +323,7 @@ struct ForStmt final: public Stmt {
 
     ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body);
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 struct CompoundStmt final: public Stmt {
@@ -325,7 +338,7 @@ struct CompoundStmt final: public Stmt {
         for (auto stmt: body) delete stmt;
     }
     void setScope(std::shared_ptr<SymbolTable>) override;
-    void traverse(const Visitor& visitor, Node * parent) override;
+    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
 } // namespace AST

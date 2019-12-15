@@ -188,28 +188,3 @@ TEST_CASE("scopes are set up properly", "[ast-stmt]") {
         CHECK_FALSE(func->specifier->scope->isLowerThan(func->body->scope));
     }
 }
-
-
-TEST_CASE("pre-order traversal works", "[ast-visitor]") {
-
-    SECTION("visiting function definition") {
-        auto func = createFuncDef("foo");
-        Visitor visitor {
-            {
-                typeid(FunDef), [](Node * current, Node * parent) {
-                    auto self = dynamic_cast<FunDef*>(current);
-                    CHECK(self->declarator->identifier == "foo");
-                }
-            },
-            {
-                typeid(CompoundStmt), [](Node * current, Node * parent) {
-                    auto self = dynamic_cast<CompoundStmt*>(current);
-                    CHECK(self->definitions.size() == 0);
-                }
-            }
-        };
-        func->traverse(visitor, nullptr);
-    }
-
-    // TODO: traverse nodes of other types
-}

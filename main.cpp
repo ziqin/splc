@@ -2,12 +2,13 @@
 #include <iostream>
 #include <memory>
 #include "parser.hpp"
+#include "semantic.hpp"
 
 using namespace std;
 
-#define CMD_ERR     0x1
-#define IO_ERR      0x2
-#define PARSING_ERR 0x4
+const int CMD_ERR       = 0x1;
+const int IO_ERR        = 0x2;
+const int PARSING_ERR   = 0x4;
 
 
 static string targetPathOf(const string& srcPath) {
@@ -34,7 +35,7 @@ int main(int argc, const char ** argv) {
     string targetPath = targetPathOf(srcPath);
 
     FILE * srcFile;
-    if (!(srcFile = fopen(srcPath, "r")) || !freopen(targetPath.c_str(), "w", stderr)) {
+    if (!(srcFile = fopen(srcPath, "r"))) {
         cerr << "Failed to open file(s)" << endl;
         exit(IO_ERR);
     }
@@ -46,14 +47,8 @@ int main(int argc, const char ** argv) {
         exit(PARSING_ERR);
     }
 
-    // write parse tree to file
-    FILE * targetFile = fopen(targetPath.c_str(), "w");
-    if (!targetFile) {
-        cerr << "Failed to open file " << targetPath << " to write" << endl;
-        exit(IO_ERR);
-    }
-    // parseTree->fprint(targetFile, 0);
-    fclose(targetFile);
+    auto dumpWalker = make_unique<AST::DumpWalker>();
+    ast->traverse({ dumpWalker.get() }, nullptr);
 
     return 0;
 }

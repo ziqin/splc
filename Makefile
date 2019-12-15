@@ -5,7 +5,7 @@ LEX=flex
 
 
 BISONFLAGS=-t -d -v
-CXXFLAGS=-std=c++14 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
+CXXFLAGS=-std=c++17 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
 LDFLAGS=-static -lfl -ly -Wl,--gc-sections
 
 # installation
@@ -22,7 +22,7 @@ main.o: main.cpp parser.hpp
 # lexical analysis & syntax analysis
 libparser.a: ast.o lex.yy.o syntax.tab.o
 	$(AR) rcs $@ $^
-ast.o: ast.cpp ast.hpp utils.hpp
+ast.o: ast.cpp ast.hpp utils.hpp syntax.tab.h
 	$(CXX) $(CXXFLAGS) -c $<
 lex.yy.o: lex.yy.c syntax.tab.h ast.hpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -34,9 +34,11 @@ syntax.tab.c syntax.tab.h: syntax.y
 	$(BISON) $(BISONFLAGS) $^
 
 # semantic analysis
-libsemantic.a: ast.o type.o
+libsemantic.a: ast.o type.o semantic.o
 	$(AR) rcs $@ $^
 type.o: type.cpp type.hpp
+	$(CXX) $(CXXFLAGS) -c $<
+semantic.o: semantic.cpp semantic.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:

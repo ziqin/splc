@@ -77,6 +77,7 @@ Program:
     ExtDefList {
         program = $$ = new AST::Program(*$1);
         delete $1;
+        $$->setLocation(&@$);
         }
     ;
 ExtDefList:
@@ -96,12 +97,15 @@ ExtDef:
     Specifier ExtDecList SEMI {
         $$ = new AST::ExtVarDef($1, *$2);
         delete $2;
+        $$->setLocation(&@$);
         }
     | Specifier SEMI {
         $$ = new AST::StructDef($1);
+        $$->setLocation(&@$);
         }
     | Specifier FunDec CompSt {
         $$ = new AST::FunDef($1, $2, $3);
+        $$->setLocation(&@$);
         }
     | Specifier ExtDecList %prec ERROR {
         $$ = nullptr;
@@ -129,19 +133,23 @@ Specifier:
     TYPE {
         $$ = new AST::PrimitiveSpecifier(*$1);
         delete $1;
+        $$->setLocation(&@$);
         }
     | StructSpecifier {
         $$ = $1;
+        $$->setLocation(&@$);
         }
     ;
 StructSpecifier:
     STRUCT ID LC DefList RC {
         $$ = new AST::StructSpecifier(*$2, *$4);
         deleteAll($2, $4);
+        $$->setLocation(&@$);
         }
     | STRUCT ID {
         $$ = new AST::StructSpecifier(*$2);
         delete $2;
+        $$->setLocation(&@$);
         }
     ;
 
@@ -150,10 +158,12 @@ VarDec:
     ID {
         $$ = new AST::VarDec(*$1);
         delete $1;
+        $$->setLocation(&@$);
         }
     | VarDec LB INT RB {
         $$ = new AST::ArrDec(*$1, $3);
         delete $1;
+        $$->setLocation(&@$);
         }
     | LEX_ERR %prec ERROR {
         $$ = nullptr;
@@ -169,9 +179,11 @@ FunDec:
     ID LP VarList RP {
         $$ = new AST::FunDec(*$1, *$3);
         deleteAll($1, $3);
+        $$->setLocation(&@$);
         }
     | ID LP RP {
         $$ = new AST::FunDec(*$1);
+        $$->setLocation(&@$);
         }
     | ID LP VarList %prec ERROR {
         $$ = nullptr;
@@ -201,6 +213,7 @@ VarList:
 ParamDec:
     Specifier VarDec {
         $$ = new AST::ParamDec($1, $2);
+        $$->setLocation(&@$);
         }
     ;
 
@@ -209,6 +222,7 @@ CompSt:
     LC DefList StmtList RC {
         $$ = new AST::CompoundStmt(*$2, *$3);
         deleteAll($2, $3);
+        $$->setLocation(&@$);
         }
     ;
 StmtList:
@@ -228,45 +242,59 @@ StmtList:
 Stmt:
     Exp SEMI {
         $$ = new AST::ExpStmt($1);
+        $$->setLocation(&@$);
         }
     | CompSt {
         $$ = $1;
+        $$->setLocation(&@$);
         }
     | RETURN Exp SEMI {
         $$ = new AST::ReturnStmt($2);
+        $$->setLocation(&@$);
         }
     | IF LP Exp RP Stmt %prec LOWER_ELSE {
         $$ = new AST::IfStmt($3, $5);
+        $$->setLocation(&@$);
         }
     | IF LP Exp RP Stmt ELSE Stmt {
         $$ = new AST::IfStmt($3, $5, $7);
+        $$->setLocation(&@$);
         }
     | WHILE LP Exp RP Stmt {
         $$ = new AST::WhileStmt($3, $5);
+        $$->setLocation(&@$);
         }
     | FOR LP SEMI SEMI RP Stmt {
         $$ = new AST::ForStmt(nullptr, nullptr, nullptr, $6);
+        $$->setLocation(&@$);
         }
     | FOR LP Exp SEMI SEMI RP Stmt {
         $$ = new AST::ForStmt($3, nullptr, nullptr, $7);
+        $$->setLocation(&@$);
         }
     | FOR LP SEMI Exp SEMI RP Stmt {
         $$ = new AST::ForStmt(nullptr, $4, nullptr, $7);
+        $$->setLocation(&@$);
         }
     | FOR LP SEMI SEMI Exp RP Stmt {
         $$ = new AST::ForStmt(nullptr, nullptr, $5, $7);
+        $$->setLocation(&@$);
         }
     | FOR LP Exp SEMI Exp SEMI RP Stmt {
         $$ = new AST::ForStmt($3, $5, nullptr, $8);
+        $$->setLocation(&@$);
         }
     | FOR LP Exp SEMI SEMI Exp RP Stmt {
         $$ = new AST::ForStmt($3, nullptr, $6, $8);
+        $$->setLocation(&@$);
         }
     | FOR LP SEMI Exp SEMI Exp RP Stmt {
         $$ = new AST::ForStmt(nullptr, $4, $6, $8);
+        $$->setLocation(&@$);
         }
     | FOR LP Exp SEMI Exp SEMI Exp RP Stmt {
         $$ = new AST::ForStmt($3, $5, $7, $9);
+        $$->setLocation(&@$);
         }
     | Exp %prec ERROR {
         $$ = nullptr;
@@ -301,6 +329,7 @@ Def:
     Specifier DecList SEMI {
         $$ = new AST::Def($1, *$2);
         delete $2;
+        $$->setLocation(&@$);
         }
     | Specifier DecList %prec ERROR {
         $$ = nullptr;
@@ -320,9 +349,11 @@ DecList:
 Dec:
     VarDec {
         $$ = new AST::Dec($1);
+        $$->setLocation(&@$);
         }
     | VarDec ASSIGN Exp {
         $$ = new AST::Dec($1, $3);
+        $$->setLocation(&@$);
         }
     ;
 
@@ -330,82 +361,107 @@ Dec:
 Exp:
     Exp ASSIGN Exp {
         $$ = new AST::AssignExp($1, $3);
+        $$->setLocation(&@$);
         }
     | Exp AND Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_AND, $3);
+        $$->setLocation(&@$);
         }
     | Exp OR Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_OR, $3);
+        $$->setLocation(&@$);
         }
     | Exp LT Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_LT, $3);
+        $$->setLocation(&@$);
         }
     | Exp LE Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_LE, $3);
+        $$->setLocation(&@$);
         }
     | Exp GT Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_GT, $3);
+        $$->setLocation(&@$);
         }
     | Exp GE Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_GE, $3);
+        $$->setLocation(&@$);
         }
     | Exp NE Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_NE, $3);
+        $$->setLocation(&@$);
         }
     | Exp EQ Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_EQ, $3);
+        $$->setLocation(&@$);
         }
     | Exp PLUS Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_PLUS, $3);
+        $$->setLocation(&@$);
         }
     | Exp MINUS Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_MINUS, $3);
+        $$->setLocation(&@$);
         }
     | Exp MUL Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_MUL, $3);
+        $$->setLocation(&@$);
         }
     | Exp DIV Exp {
         $$ = new AST::BinaryExp($1, AST::OPT_DIV, $3);
+        $$->setLocation(&@$);
         }
     | LP Exp RP {  // FIXME: recover original structure?
         $$ = $2;
+        $$->setLocation(&@$);
         }
     | PLUS Exp %prec UPLUS {
         $$ = new AST::UnaryExp(AST::OPT_PLUS, $2);
+        $$->setLocation(&@$);
         }
     | MINUS Exp %prec UMINUS {
         $$ = new AST::UnaryExp(AST::OPT_MINUS, $2);
+        $$->setLocation(&@$);
         }
     | NOT Exp %prec NOT {
         $$ = new AST::UnaryExp(AST::OPT_NOT, $2);
+        $$->setLocation(&@$);
         }
     | ID LP Args RP {
         $$ = new AST::CallExp(*$1, *$3);
         deleteAll($1, $3);
+        $$->setLocation(&@$);
         }
     | ID LP RP {
         $$ = new AST::CallExp(*$1);
         delete $1;
+        $$->setLocation(&@$);
         }
     | Exp LB Exp RB {
         $$ = new AST::ArrayExp($1, $3);
+        $$->setLocation(&@$);
         }
     | Exp DOT ID {
         $$ = new AST::MemberExp($1, *$3);
         delete $3;
+        $$->setLocation(&@$);
         }
     | ID {
         $$ = new AST::IdExp(*$1);
         delete $1;
+        $$->setLocation(&@$);
         }
     | INT {
         $$ = new AST::LiteralExp($1);
+        $$->setLocation(&@$);
         }
     | FLOAT {
         $$ = new AST::LiteralExp($1);
+        $$->setLocation(&@$);
         }
     | CHAR {
         $$ = new AST::LiteralExp($1);
+        $$->setLocation(&@$);
         }
     | LEX_ERR {
         $$ = nullptr;
