@@ -31,4 +31,19 @@ protected:
 
 }
 
+#ifdef ENABLE_HOOK_MACRO
+
+// `this` refers to the instance of the Walker class
+// `self` refers to the AST node being visited
+#define BEG_ENTER_HOOK(Type) preHooks[typeid(Type)] = [this](Node * current, Node * parent) { \
+        auto self = dynamic_cast<Type*>(current)
+#define END_ENTER_HOOK(Type) }
+
+#define BEG_LEAVE_HOOK(Type) postHooks[typeid(Type)] = [this](Node * current, Node * parent) { \
+        auto self = dynamic_cast<Type*>(current)
+#define END_LEAVE_HOOK(Type) }
+
+#endif // ENABLE_HOOK_MACRO
+
+
 #endif // AST_WALKER_HPP

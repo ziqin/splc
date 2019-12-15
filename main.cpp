@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include "parser.hpp"
+#include "ast_dump.hpp"
 #include "semantic.hpp"
 
 using namespace std;
@@ -47,7 +48,7 @@ int main(int argc, const char ** argv) {
         exit(PARSING_ERR);
     }
 
-    auto dumpWalker = make_unique<AST::DumpWalker>();
+    auto dumpWalker = make_unique<AST::DumpWalker>(std::cout);
     ast->traverse({ dumpWalker.get() }, nullptr);
 
     return 0;

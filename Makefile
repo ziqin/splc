@@ -16,7 +16,7 @@ install: main.elf
 # command line interface
 main.elf: main.o libparser.a libsemantic.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
-main.o: main.cpp parser.hpp
+main.o: main.cpp parser.hpp ast_dump.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # lexical analysis & syntax analysis
