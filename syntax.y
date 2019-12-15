@@ -89,7 +89,7 @@ ExtDefList:
         $$ = new std::list<AST::ExtDef*>;
         }
     | LEX_ERR_BLK {
-        $$ = nullptr;
+        $$ = new std::list<AST::ExtDef*>;
         hasErr = true;
         }
     ;
@@ -108,14 +108,13 @@ ExtDef:
         $$->setLocation(&@$);
         }
     | Specifier ExtDecList %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::ExtVarDef($1, *$2);
+        delete $2;
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
-        deleteAll($1, *$2, $2);
         }
     | Specifier %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::StructDef($1);
         reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
-        delete $1;
         }
     ;
 ExtDecList:
@@ -166,11 +165,11 @@ VarDec:
         $$->setLocation(&@$);
         }
     | LEX_ERR %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::VarDec("#err");
         hasErr = true;
         }
     | VarDec LB INT %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::ArrDec(*$1, $3);
         delete $1;
         reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
         }
@@ -183,20 +182,21 @@ FunDec:
         }
     | ID LP RP {
         $$ = new AST::FunDec(*$1);
+        delete $1;
         $$->setLocation(&@$);
         }
     | ID LP VarList %prec ERROR {
-        $$ = nullptr;
-        deleteAll($1, *$3, $3);
+        $$ = new AST::FunDec(*$1, *$3);
+        deleteAll($1, $3);
         reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
         }
     | ID LP %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::FunDec(*$1);
         delete $1;
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
         }
     | ID RP %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::FunDec(*$1);
         delete $1;
         reportSynErr(@2.first_line, SYNTAX_ERR_MISSING_LP);
         }
@@ -234,8 +234,9 @@ StmtList:
         $$ = new std::list<AST::Stmt*>();
         }
     | Stmt Def StmtList %prec ERROR {
-        $$ = nullptr;
-        deleteAll($1, $2, *$3, $3);
+        $3->push_front($1);
+        $$ = $3;
+        delete $2;
         reportSynErr(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER);
         }
     ;
@@ -297,21 +298,19 @@ Stmt:
         $$->setLocation(&@$);
         }
     | Exp %prec ERROR {
-        $$ = nullptr;
-        delete $1;
+        $$ = new AST::ExpStmt($1);
         reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
         }
     | RETURN Exp %prec ERROR {
-        $$ = nullptr;
-        delete $2;
+        $$ = new AST::ReturnStmt($2);
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
         }
     | LEX_ERR_BLK %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::ReturnStmt();
         hasErr = true;
         }
     | error SEMI %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::ReturnStmt();
         }
     ;
 
@@ -332,8 +331,8 @@ Def:
         $$->setLocation(&@$);
         }
     | Specifier DecList %prec ERROR {
-        $$ = nullptr;
-        deleteAll($1, *$2, $2);
+        $$ = new AST::Def($1, *$2);
+        delete $2;
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
         }
     ;
@@ -464,32 +463,30 @@ Exp:
         $$->setLocation(&@$);
         }
     | LEX_ERR {
-        $$ = nullptr;
+        $$ = new AST::Exp;
         hasErr = true;
         }
     | Exp LEX_ERR Exp  %prec ERROR {
-        $$ = nullptr;
         deleteAll($1, $3);
+        $$ = new AST::Exp;
         hasErr = true;
         }
     | LP Exp %prec ERROR {
-        $$ = nullptr;
-        delete $2;
+        $$ = $2;
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
         }
     | ID LP Args %prec ERROR {
-        $$ = nullptr;
-        deleteAll($1, *$3, $3);
+        $$ = new AST::CallExp(*$1, *$3);
+        deleteAll($1, $3);
         reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
         }
     | ID LP %prec ERROR {
-        $$ = nullptr;
+        $$ = new AST::CallExp(*$1);
         delete $1;
         reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
         }
     | Exp LB Exp %prec ERROR {
-        $$ = nullptr;
-        deleteAll($1, $3);
+        $$ = new AST::ArrayExp($1, $3);
         reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
         }
     ;
@@ -525,6 +522,7 @@ AST::Program * parseFile(FILE * file) {
         return program;
     } else {
         delete program;
+        program = nullptr;
         return nullptr;
     }
 }

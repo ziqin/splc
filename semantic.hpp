@@ -8,7 +8,7 @@ namespace AST {
 
 class DumpWalker: public Walker {
 private:
-    std::unordered_map<void*, int> indent;
+    std::unordered_map<unsigned, int> indent;
 
 public:
     std::optional<Hook> getPreHook(std::type_index type) override;

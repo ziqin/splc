@@ -45,8 +45,10 @@ struct Location {
 };
 
 struct Node {
+    unsigned id;
     Location loc;
     std::shared_ptr<SymbolTable> scope;
+    Node();
     virtual ~Node() {}
     virtual void setScope(std::shared_ptr<SymbolTable>);
     virtual void traverse(const std::vector<Walker*>& walkers, Node * parent);

@@ -26,6 +26,11 @@ inline static void execPostHook(const vector<Walker*>& walkers, T * self, Node *
     }
 }
 
+Node::Node() {
+    static int gid = 0;
+    id = gid++;
+}
+
 void Node::setScope(shared_ptr<SymbolTable> scope) {
     this->scope = scope;
 }
@@ -55,10 +60,7 @@ ArrDec::ArrDec(const VarDec& declarator, int dim): VarDec(declarator.identifier)
 
 
 Dec::Dec(VarDec * declarator, Exp * init): declarator(declarator), init(init) {
-    if (hasNull(this->declarator, this->init)) {
-        deleteAll(this->declarator, this->init);
-        throw invalid_argument("declarator/init cannot be null");
-    }
+    if (declarator == nullptr) throw invalid_argument("declarator cannot be null");
 }
 
 Dec::~Dec() {
@@ -68,13 +70,13 @@ Dec::~Dec() {
 void Dec::setScope(std::shared_ptr<SymbolTable> scope) {
     this->scope = scope;
     declarator->setScope(scope);
-    init->setScope(scope);
+    if (init) init->setScope(scope);
 }
 
 void Dec::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
     declarator->traverse(walkers, this);
-    init->traverse(walkers, this);
+    if (init) init->traverse(walkers, this);
     execPostHook(walkers, this, parent);
 }
 
@@ -234,7 +236,7 @@ void StructDef::setScope(std::shared_ptr<SymbolTable> scope) {
 
 void StructDef::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, parent);
+    specifier->traverse(walkers, this);
     execPostHook(walkers, this, parent);
 }
 
