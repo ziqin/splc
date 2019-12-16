@@ -41,7 +41,7 @@ protected:
 #define END_ENTER_HOOK(NodeType) }
 
 #define BEG_LEAVE_HOOK(NodeType) postHooks[typeid(NodeType)] = [this](Node * _current, Node * parent) { \
-        auto self = dynamic_cast<Type*>(_current)
+        auto self = dynamic_cast<NodeType*>(_current)
 #define END_LEAVE_HOOK(NodeType) }
 
 #endif // ENABLE_HOOK_MACRO
