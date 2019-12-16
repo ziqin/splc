@@ -55,3 +55,76 @@ TEST_CASE("findNull() and deleteAll() can handle single, multiple, and STL conta
         CHECK(ptrs[1] == nullptr);
     }
 }
+
+
+struct MemFlag {
+    static int cnt;
+    MemFlag() {
+        cnt++;
+    }
+    ~MemFlag() {
+        cnt--;
+    }
+};
+
+int MemFlag::cnt = 0;
+
+SCENARIO("share data using Shared", "[Shared]") {
+    GIVEN("a class named DestructorTester") {
+        Shared<MemFlag> s1;
+        Shared<MemFlag> s2 = s1;
+        CHECK(MemFlag::cnt == 0);
+        CHECK(s2.useCount() == 2);
+
+        /* WHEN("setting a value") */ {
+            s2.set(new MemFlag);
+            CHECK(s2.value().cnt == 1);
+            CHECK(s1.get() == s2.get());
+
+            {
+                auto s3 = s1;
+                THEN("data are shared") {
+                    CHECK(s3.get() == s2.get());
+                }
+                CHECK(MemFlag::cnt == 1);
+                CHECK(s3.useCount() == 3);
+            }
+            CHECK(s1.useCount() == 2);
+
+            int oldCnt = MemFlag::cnt;
+            CHECK(oldCnt == 1);
+            {
+                auto newVal = new MemFlag;
+                THEN("there are 2 pieces of data") {
+                    CHECK(MemFlag::cnt == oldCnt + 1);
+                }
+                s1.set(newVal);
+                THEN("only 1 piece of data exits now") {
+                    CHECK(MemFlag::cnt == oldCnt);
+                }
+            }
+            CHECK(MemFlag::cnt == oldCnt);
+
+            {
+                Shared<MemFlag> t(new MemFlag);
+                CHECK(t.get() != s2.get());
+                CHECK(t.useCount() == 1);
+                CHECK(s1.useCount() == 2);
+                CHECK(MemFlag::cnt == 2);
+
+                s2 = t;
+                CHECK(t.get() == s2.get());
+                CHECK(t.useCount() == 2);
+                CHECK(s1.useCount() == 1);
+                CHECK(MemFlag::cnt == 2);
+            }
+        }
+        CHECK(s2.useCount() == 1);
+        CHECK(s1.get() != s2.get());
+    }
+
+    // shared object destroyed
+    CHECK(MemFlag::cnt == 0);
+}
+
+// TODO: test overloaded operators

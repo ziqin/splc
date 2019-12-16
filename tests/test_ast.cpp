@@ -6,55 +6,6 @@ using namespace std;
 using namespace AST;
 
 
-SCENARIO("symbol table works", "[ast-scope]") {
-
-    GIVEN("some symbol tables and types") {
-        auto intType = make_type<PrimitiveType>(TYPE_INT);
-        auto charType = make_type<PrimitiveType>(TYPE_CHAR);
-        auto globalScope = make_shared<SymbolTable>(nullptr);
-        auto funcScope = make_shared<SymbolTable>(globalScope);
-        auto blockScope = make_shared<SymbolTable>(funcScope);
-
-        globalScope->add("id1", intType);
-        REQUIRE(*globalScope->getType("id1") == *intType);
-        REQUIRE(globalScope->getType("id2") == nullptr);
-        CHECK(globalScope->size() == 1);
-        CHECK(blockScope->isLowerThan(blockScope));
-        CHECK(blockScope->isLowerThan(funcScope));
-        CHECK(blockScope->isLowerThan(globalScope));
-        CHECK_FALSE(funcScope->isLowerThan(blockScope));
-
-        WHEN("adding a new symbol") {
-            funcScope->add("id2", charType);
-
-            THEN("the new symbol can be found in the current scope") {
-                REQUIRE(*funcScope->getType("id2") == *charType);
-            }
-
-            THEN("the new symbol cannot be found in the upper scope") {
-                CHECK(globalScope->getType("id2") == nullptr);
-            }
-
-            THEN("the new symbol can be found in the sub scope") {
-                CHECK(*blockScope->getType("id2") == *charType);
-            }
-
-            THEN("size of current scope is increased by 1") {
-                REQUIRE(funcScope->size() == 2);
-            }
-
-            THEN("size of parent scope doesn't change") {
-                REQUIRE(globalScope->size() == 1);
-            }
-
-            THEN("size of sub scope is increased by 1") {
-                REQUIRE(blockScope->size() == 2);
-            }
-        }
-    }
-}
-
-
 TEST_CASE("AST nodes for expressions can be constructed", "[ast-exp]") {
 
     SECTION("constructing id expressions") {

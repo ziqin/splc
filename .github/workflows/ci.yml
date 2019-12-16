@@ -15,5 +15,5 @@ jobs:
       run: make -j2
     - name: Unit Tests
       run: make unit-test
-    - name: Diff Tests
-      run: make diff-test
+    # - name: Diff Tests
+    #   run: make diff-test

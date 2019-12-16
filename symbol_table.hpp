@@ -1,27 +1,28 @@
 #include <map>
-#include <memory>
+#include <optional>
 #include <string>
 #include "type.hpp"
+#include "utils.hpp"
 
 namespace AST {
 
 class SymbolTable {
 private:
-    std::map<std::string, std::shared_ptr<Type>> table;
+    std::map<std::string, Shared<Type>> table;
     std::shared_ptr<SymbolTable> parent;
 
 public:
     SymbolTable(std::shared_ptr<SymbolTable> parent): parent(parent) {}
 
-    void add(std::string identifier, std::shared_ptr<Type> type) {
-        table.insert({ identifier, type });
+    void setType(const std::string& identifier, Shared<Type> type) {
+        table[identifier] = type;
     }
 
-    std::shared_ptr<Type> getType(std::string identifier) {
+    std::optional<Shared<Type>> getType(const std::string& identifier) {
         auto found = table.find(identifier);
         if (found != table.end()) return found->second;
         if (parent != nullptr) return parent->getType(identifier);
-        return nullptr;
+        return std::nullopt;
     }
 
     size_t size() const {

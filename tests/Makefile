@@ -16,7 +16,7 @@ test_driver.o: test_driver.cpp
 test_utils.o: test_utils.cpp ../utils.hpp
 	$(CXX) -c $< $(CXXFLAGS) $(INC)
 
-test_type.o: test_type.cpp ../type.hpp ../type.cpp
+test_type.o: test_type.cpp ../type.hpp ../type.cpp ../symbol_table.hpp
 	$(CXX) -c $< $(CXXFLAGS) $(INC)
 
 test_ast.o: test_ast.cpp ../ast.hpp ../ast.cpp

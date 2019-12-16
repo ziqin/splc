@@ -6,7 +6,7 @@
 #include <string>
 #include <type_traits>
 #include <utility>
-
+#include "utils.hpp"
 
 namespace AST {
 
@@ -29,49 +29,48 @@ struct PrimitiveType: public Type {
     Primitive primitive;
 
     PrimitiveType(Primitive primitive): primitive(primitive) {}
+    bool operator==(const PrimitiveType& other) const;
     bool operator==(const Type& other) const;
+    bool operator==(Primitive p) const;
 };
 
 struct ArrayType: public Type {
-    std::shared_ptr<Type> baseType;
+    Shared<Type> baseType;
     size_t size;
 
-    ArrayType(std::shared_ptr<Type> baseType, size_t size):
+    ArrayType(Shared<Type> baseType, size_t size):
         baseType(baseType), size(size) {}
+    bool operator==(const ArrayType& other) const;
     bool operator==(const Type& other) const;
 };
 
-struct StructType: public Type {
-    std::vector<std::pair<std::shared_ptr<Type>, std::string>> fields;
+using StructField = std::pair<Shared<Type>, std::string>;
 
-    StructType() {}
-    StructType(const std::vector<std::pair<std::shared_ptr<Type>, std::string>>& fields): fields(fields) {}
+struct StructType: public Type {
+    std::vector<StructField> fields;
+
+    StructType(const std::vector<StructField>& fields = {}): fields(fields) {}
+    bool operator==(const StructType& other) const;
     bool operator==(const Type& other) const;
-    std::shared_ptr<Type> getFieldType(const std::string& name);
+    Shared<Type> getFieldType(const std::string& name);
 };
 
 struct FunctionType: public Type {
-    std::shared_ptr<Type> returned;
-    std::vector<std::shared_ptr<Type>> parameters;
+    Shared<Type> returned;
+    std::vector<Shared<Type>> parameters;
 
-    FunctionType(std::shared_ptr<Type> returned):
-        returned(returned)
-    {}
-
-    FunctionType(std::shared_ptr<Type> returned, std::vector<std::shared_ptr<Type>> parameters):
-        returned(returned), parameters(parameters)
-    {}
-
+    FunctionType(Shared<Type> returned, std::vector<Shared<Type>> parameters = {}):
+        returned(returned), parameters(parameters) {}
+    bool operator==(const FunctionType& other) const;
     bool operator==(const Type& other) const;
 };
 
 struct TypeAlias: public Type {
     std::string name;
-    std::shared_ptr<Type> base;
+    Shared<Type> base;
 
-    TypeAlias(std::string name, std::shared_ptr<Type> base):
-        name(name), base(base)
-    {}
+    TypeAlias(std::string name, Shared<Type> base):
+        name(name), base(base) {}
 
     bool operator==(const TypeAlias&) const;
     bool operator==(const Type&) const;
@@ -83,9 +82,16 @@ inline static bool operator==(const Type& a, const TypeAlias& b) {
 
 
 template<typename T, typename... Args, typename std::enable_if<std::is_base_of<Type, T>::value>::type* = nullptr>
-std::shared_ptr<Type> make_type(Args... args) {
-    return std::shared_ptr<Type>(new T(args...));
+inline Shared<Type> makeType(Args... args) {
+    return Shared<Type>(new T(args...));
 }
+
+
+template<typename T, typename std::enable_if<std::is_base_of<Type, T>::value>::type* = nullptr>
+inline T& as(Shared<Type> type) {
+    return dynamic_cast<T&>(type.value());
+}
+
 
 } // end of namespace AST
 

@@ -3,35 +3,11 @@
 
 #include <ostream>
 #include <string>
-#include <typeinfo>
 #include "ast.hpp"
 
 #define ENABLE_HOOK_MACRO
 #include "ast_walker.hpp"
-
-
-#ifdef __GNUG__
-#include <cstdlib>
-#include <memory>
-#include <cxxabi.h>
-template <class T>
-std::string type(const T& t) {
-    const char * name = typeid(t).name();
-    int status = 0;
-    char * _demangled = abi::__cxa_demangle(name, nullptr, nullptr, &status);
-    if (status == 0) {
-        std::string demangled(_demangled);
-        std::free(_demangled);
-        return demangled;
-    }
-    return name;
-}
-#else
-template <class T>
-std::string type(const T& t) {
-    return typeid(t).name();
-}
-#endif
+#include "utils.hpp"
 
 
 namespace AST {
@@ -51,7 +27,7 @@ private:
         unsigned indent = parent ? indents[parent->id] + 2 : 0;
         indents[self->id] = indent;
         for (unsigned i = 0; i < indent; ++i) outStream << ' ';
-        outStream << type(*self) << ' ' << self->loc;
+        outStream << fullTypeName(*self) << ' ' << self->loc;
         return outStream;
     }
 

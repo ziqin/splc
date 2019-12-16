@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 #include <typeindex>
+#include <typeinfo>
 
 namespace AST {
 
@@ -35,13 +36,13 @@ protected:
 
 // `this` refers to the instance of the Walker class
 // `self` refers to the AST node being visited
-#define BEG_ENTER_HOOK(Type) preHooks[typeid(Type)] = [this](Node * current, Node * parent) { \
-        auto self = dynamic_cast<Type*>(current)
-#define END_ENTER_HOOK(Type) }
+#define BEG_ENTER_HOOK(NodeType) preHooks[typeid(NodeType)] = [this](Node * _current, Node * parent) { \
+        auto self = dynamic_cast<NodeType*>(_current)
+#define END_ENTER_HOOK(NodeType) }
 
-#define BEG_LEAVE_HOOK(Type) postHooks[typeid(Type)] = [this](Node * current, Node * parent) { \
-        auto self = dynamic_cast<Type*>(current)
-#define END_LEAVE_HOOK(Type) }
+#define BEG_LEAVE_HOOK(NodeType) postHooks[typeid(NodeType)] = [this](Node * _current, Node * parent) { \
+        auto self = dynamic_cast<Type*>(_current)
+#define END_LEAVE_HOOK(NodeType) }
 
 #endif // ENABLE_HOOK_MACRO
 

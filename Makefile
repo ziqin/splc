@@ -36,7 +36,7 @@ syntax.tab.c syntax.tab.h: syntax.y
 # semantic analysis
 libsemantic.a: ast.o type.o semantic.o
 	$(AR) rcs $@ $^
-type.o: type.cpp type.hpp
+type.o: type.cpp type.hpp utils.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 semantic.o: semantic.cpp semantic.hpp
 	$(CXX) $(CXXFLAGS) -c $<
