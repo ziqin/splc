@@ -10,6 +10,7 @@
 #include <vector>
 #include "symbol_table.hpp"
 #include "type.hpp"
+#include "utils.hpp"
 
 
 struct YYLTYPE;
@@ -105,12 +106,14 @@ struct FunDec: public Node {
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
 
-struct Specifier: public Node {};
+struct Specifier: public Node {
+    Shared<Type> type;
+};
 
 struct PrimitiveSpecifier final: public Specifier {
     Primitive primitive;
 
-    PrimitiveSpecifier(const std::string& type);
+    PrimitiveSpecifier(const std::string& typeName);
 };
 
 struct StructSpecifier final: public Specifier {
@@ -163,10 +166,10 @@ struct Program final: public Node {
 // ------------------------ expressions ------------------------------
 
 struct Exp: public Node {
-    std::shared_ptr<Type> type;
+    Shared<Type> type;
 
     Exp() {}
-    Exp(std::shared_ptr<Type> type): type(type) {}
+    Exp(Shared<Type> type): type(type) {}
     virtual ~Exp() {}
 };
 

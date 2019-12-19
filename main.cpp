@@ -44,9 +44,7 @@ int main(int argc, const char ** argv) {
     // parsing
     unique_ptr<AST::Program> ast(parseFile(srcFile));
     fclose(srcFile);
-    if (!ast) { // lexical/syntax error
-        exit(PARSING_ERR);
-    }
+    if (!ast) exit(PARSING_ERR);
 
     auto dumpWalker = make_unique<AST::DumpWalker>(std::cout);
     auto scopeSetter = make_unique<AST::ScopeSetter>();

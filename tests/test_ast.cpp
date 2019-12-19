@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 #include <memory>
 #include "ast.hpp"
+#include "parser.hpp"
 
 using namespace std;
 using namespace AST;
@@ -94,4 +95,21 @@ TEST_CASE("AST nodes for statements can be constructed and destroyed", "[ast-stm
         CHECK_THROWS_AS(ForStmt(createExp(), createExp(), createExp(), nullptr), invalid_argument);
     }
 
+}
+
+
+TEST_CASE("AST can be constructed", "[ast-program]") {
+    SECTION("constructing an AST from a string") {
+        const char * src =
+            "int twice(int c) {"
+            "  return c + c;"
+            "}";
+        unique_ptr<AST::Program> ast(parseStr(src));
+        REQUIRE(ast != nullptr);
+        THEN("there is a function definition") {
+            CHECK(ast->extDefs.size() == 1);
+            const FunDef * func = dynamic_cast<const FunDef*>(ast->extDefs[0]);
+            CHECK(func != nullptr);
+        }
+    }
 }

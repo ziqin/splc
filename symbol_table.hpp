@@ -1,6 +1,10 @@
+#ifndef SYMBOL_TABLE_HPP
+#define SYMBOL_TABLE_HPP
+
 #include <map>
 #include <optional>
 #include <string>
+#include <typeinfo>
 #include "type.hpp"
 #include "utils.hpp"
 
@@ -34,6 +38,13 @@ public:
         if (parent != nullptr) return parent->isLowerThan(scope);
         return false;
     }
+
+    bool canOverwrite(const std::string& name) const {
+        return table.find(name) == table.end();
+    }
 };
 
 } // end of namespace AST
+
+
+#endif // SYMBOL_TABLE_HPP

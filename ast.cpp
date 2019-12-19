@@ -4,7 +4,6 @@
 #include "ast.hpp"
 #include "ast_walker.hpp"
 #include "syntax.tab.h"
-#include "utils.hpp"
 
 using namespace AST;
 using namespace std;
@@ -134,11 +133,19 @@ void FunDec::traverse(const vector<Walker*>& walkers, Node * parent) {
 }
 
 
-PrimitiveSpecifier::PrimitiveSpecifier(const string& type) {
-    if (type == "char") primitive = TYPE_CHAR;
-    else if (type == "int") primitive = TYPE_INT;
-    else if (type == "float") primitive = TYPE_FLOAT;
-    else throw invalid_argument("illegal primitive type");
+PrimitiveSpecifier::PrimitiveSpecifier(const string& typeName) {
+    if (typeName == "char") {
+        primitive = TYPE_CHAR;
+        type.set(new PrimitiveType(TYPE_CHAR));
+    } else if (typeName == "int") {
+        primitive = TYPE_INT;
+        type.set(new PrimitiveType(TYPE_INT));
+    } else if (typeName == "float") {
+        primitive = TYPE_FLOAT;
+        type.set(new PrimitiveType(TYPE_FLOAT));
+    } else {
+        throw invalid_argument("illegal primitive type");
+    }
 }
 
 
@@ -149,6 +156,7 @@ StructSpecifier::StructSpecifier(const string& id, const list<Def*>& defList):
         deleteAll(this->definitions);
         throw invalid_argument("definitions cannot be null");
     }
+    type.set(new StructType);
 }
 
 StructSpecifier::~StructSpecifier() {
@@ -244,15 +252,15 @@ void Program::traverse(const vector<Walker*>& walkers, Node * parent) {
 // ----------------------- expressions ---------------------------
 
 LiteralExp::LiteralExp(char val):
-    Exp(shared_ptr<Type>(new PrimitiveType(TYPE_CHAR))),
+    Exp(Shared<Type>(new PrimitiveType(TYPE_CHAR))),
     charVal(val) {}
 
 LiteralExp::LiteralExp(int val):
-    Exp(shared_ptr<Type>(new PrimitiveType(TYPE_INT))),
+    Exp(Shared<Type>(new PrimitiveType(TYPE_INT))),
     intVal(val) {}
 
 LiteralExp::LiteralExp(double val):
-    Exp(shared_ptr<Type>(new PrimitiveType(TYPE_FLOAT))),
+    Exp(Shared<Type>(new PrimitiveType(TYPE_FLOAT))),
     floatVal(val) {}
 
 

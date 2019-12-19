@@ -7,5 +7,6 @@
 #include "ast.hpp"
 
 AST::Program * parseFile(FILE *);
+AST::Program * parseStr(const char *);
 
 #endif

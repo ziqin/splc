@@ -30,7 +30,7 @@ struct PrimitiveType: public Type {
 
     PrimitiveType(Primitive primitive): primitive(primitive) {}
     bool operator==(const PrimitiveType& other) const;
-    bool operator==(const Type& other) const;
+    bool operator==(const Type& other) const override;
     bool operator==(Primitive p) const;
 };
 
@@ -52,14 +52,14 @@ struct StructType: public Type {
     StructType(const std::vector<StructField>& fields = {}): fields(fields) {}
     bool operator==(const StructType& other) const;
     bool operator==(const Type& other) const;
-    Shared<Type> getFieldType(const std::string& name);
+    Shared<Type> getFieldType(const std::string& name) const;
 };
 
 struct FunctionType: public Type {
     Shared<Type> returned;
     std::vector<Shared<Type>> parameters;
 
-    FunctionType(Shared<Type> returned, std::vector<Shared<Type>> parameters = {}):
+    FunctionType(Shared<Type> returned, const std::vector<Shared<Type>>& parameters = {}):
         returned(returned), parameters(parameters) {}
     bool operator==(const FunctionType& other) const;
     bool operator==(const Type& other) const;

@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-std=c++17 -Wall
 INC=-I../ -I./
-LIB=-L../ -lparser -lsemantic
+LIB=-L../ -lparser -lsemantic -lfl -ly
 
 
 test: test.elf

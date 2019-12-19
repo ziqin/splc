@@ -1,3 +1,4 @@
+#include <exception>
 #include <typeinfo>
 #include "type.hpp"
 
@@ -42,7 +43,7 @@ bool StructType::operator==(const Type& other) const {
         *this == dynamic_cast<const StructType&>(other);
 }
 
-Shared<Type> StructType::getFieldType(const std::string& name) {
+Shared<Type> StructType::getFieldType(const std::string& name) const {
     for (auto& field: fields) {
         if (field.second == name)
             return field.first;

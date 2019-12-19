@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <list>
+#include <memory>
 #include <string>
 #include "ast.hpp"
 #include "utils.hpp"
@@ -15,6 +16,11 @@ AST::Program * parseFile(FILE *);
 extern FILE * yyin;
 static AST::Program * program;
 static bool hasErr;
+
+struct yy_buffer_state;
+typedef struct yy_buffer_state * YY_BUFFER_STATE;
+extern YY_BUFFER_STATE yy_scan_string(const char * str);
+extern void yy_delete_buffer(YY_BUFFER_STATE buffer);
 
 %}
 
@@ -525,4 +531,15 @@ AST::Program * parseFile(FILE * file) {
         program = nullptr;
         return nullptr;
     }
+}
+
+AST::Program * parseStr(const char * src) {
+    hasErr = false;
+    YY_BUFFER_STATE buffer = yy_scan_string(src);
+    if (yyparse() != 0 || hasErr) {
+        delete program;
+        program = nullptr;
+    }
+    yy_delete_buffer(buffer);
+    return program;
 }
