@@ -4,7 +4,7 @@
 #include "type.hpp"
 
 using namespace std;
-using namespace AST;
+using namespace smt;
 
 
 TEST_CASE("types are comparable", "[ast-type]") {

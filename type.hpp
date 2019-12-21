@@ -8,7 +8,7 @@
 #include <utility>
 #include "utils.hpp"
 
-namespace AST {
+namespace smt {
 
 enum Primitive {
     TYPE_CHAR,

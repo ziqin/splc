@@ -55,9 +55,9 @@ public:
         BEG_ENTER_HOOK(PrimitiveSpecifier);
             auto& out = this->out(self, parent) << " type: ";
             switch (self->primitive) {
-                case TYPE_CHAR: out << "char"; break;
-                case TYPE_INT: out << "int"; break;
-                case TYPE_FLOAT: out << "float"; break;
+                case smt::TYPE_CHAR: out << "char"; break;
+                case smt::TYPE_INT: out << "int"; break;
+                case smt::TYPE_FLOAT: out << "float"; break;
                 default: out << "auto"; break;
             }
             out << std::endl;

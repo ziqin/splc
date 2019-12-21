@@ -9,17 +9,17 @@
 #define ENABLE_HOOK_MACRO
 #include "ast_walker.hpp"
 
-namespace AST {
+namespace smt {
 
 
-class ScopeSetter: public Walker {
+class ScopeSetter: public AST::Walker {
 public:
     ScopeSetter();
-    std::optional<Hook> getPreHook(std::type_index) override;
+    std::optional<AST::Hook> getPreHook(std::type_index) override;
 };
 
 
-class SemanticAnalyzer: public Walker {
+class SemanticAnalyzer: public AST::Walker {
 public:
     enum SemanticErr {
         ERR_TYPE0,
@@ -39,11 +39,11 @@ public:
         ERR_TYPE14,
         ERR_TYPE15
     };
-    using SemanticErrRecord = std::tuple<SemanticErr, Node *, std::string>;
+    using SemanticErrRecord = std::tuple<SemanticErr, AST::Node *, std::string>;
 
     SemanticAnalyzer(std::vector<SemanticErrRecord>& errStore): errs(errStore) {}
-    void report(SemanticErr errType, Node * cause, const std::string& msg);
-    bool hasErr(Node * node) const;
+    void report(SemanticErr errType, AST::Node * cause, const std::string& msg);
+    bool hasErr(AST::Node * node) const;
 
 private:
     std::vector<SemanticErrRecord>& errs;

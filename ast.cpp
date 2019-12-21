@@ -135,14 +135,14 @@ void FunDec::traverse(const vector<Walker*>& walkers, Node * parent) {
 
 PrimitiveSpecifier::PrimitiveSpecifier(const string& typeName) {
     if (typeName == "char") {
-        primitive = TYPE_CHAR;
-        type.set(new PrimitiveType(TYPE_CHAR));
+        primitive = smt::TYPE_CHAR;
+        type.set(new smt::PrimitiveType(smt::TYPE_CHAR));
     } else if (typeName == "int") {
-        primitive = TYPE_INT;
-        type.set(new PrimitiveType(TYPE_INT));
+        primitive = smt::TYPE_INT;
+        type.set(new smt::PrimitiveType(smt::TYPE_INT));
     } else if (typeName == "float") {
-        primitive = TYPE_FLOAT;
-        type.set(new PrimitiveType(TYPE_FLOAT));
+        primitive = smt::TYPE_FLOAT;
+        type.set(new smt::PrimitiveType(smt::TYPE_FLOAT));
     } else {
         throw invalid_argument("illegal primitive type");
     }
@@ -156,7 +156,7 @@ StructSpecifier::StructSpecifier(const string& id, const list<Def*>& defList):
         deleteAll(this->definitions);
         throw invalid_argument("definitions cannot be null");
     }
-    type.set(new StructType);
+    type.set(new smt::StructType);
 }
 
 StructSpecifier::~StructSpecifier() {
@@ -252,15 +252,15 @@ void Program::traverse(const vector<Walker*>& walkers, Node * parent) {
 // ----------------------- expressions ---------------------------
 
 LiteralExp::LiteralExp(char val):
-    Exp(Shared<Type>(new PrimitiveType(TYPE_CHAR))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_CHAR))),
     charVal(val) {}
 
 LiteralExp::LiteralExp(int val):
-    Exp(Shared<Type>(new PrimitiveType(TYPE_INT))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_INT))),
     intVal(val) {}
 
 LiteralExp::LiteralExp(double val):
-    Exp(Shared<Type>(new PrimitiveType(TYPE_FLOAT))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_FLOAT))),
     floatVal(val) {}
 
 

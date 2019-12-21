@@ -2,7 +2,7 @@
 #include <typeinfo>
 #include "type.hpp"
 
-using namespace AST;
+using namespace smt;
 
 bool PrimitiveType::operator==(const PrimitiveType& other) const {
     return primitive == other.primitive;

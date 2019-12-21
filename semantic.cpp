@@ -2,6 +2,7 @@
 #include "type.hpp"
 
 using namespace AST;
+using namespace smt;
 using namespace std;
 
 

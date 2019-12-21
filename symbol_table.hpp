@@ -8,7 +8,7 @@
 #include "type.hpp"
 #include "utils.hpp"
 
-namespace AST {
+namespace smt {
 
 class SymbolTable {
 private:

@@ -47,7 +47,7 @@ int main(int argc, const char ** argv) {
     if (!ast) exit(PARSING_ERR);
 
     auto dumpWalker = make_unique<AST::DumpWalker>(std::cout);
-    auto scopeSetter = make_unique<AST::ScopeSetter>();
+    auto scopeSetter = make_unique<smt::ScopeSetter>();
     ast->traverse({ dumpWalker.get(), scopeSetter.get() }, nullptr);
 
     return 0;

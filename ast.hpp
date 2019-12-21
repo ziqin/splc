@@ -48,7 +48,7 @@ struct Location {
 struct Node {
     unsigned id;
     Location loc;
-    std::shared_ptr<SymbolTable> scope;
+    std::shared_ptr<smt::SymbolTable> scope;
     Node();
     virtual ~Node() {}
     virtual void traverse(const std::vector<Walker*>& walkers, Node * parent);
@@ -107,11 +107,11 @@ struct FunDec: public Node {
 };
 
 struct Specifier: public Node {
-    Shared<Type> type;
+    Shared<smt::Type> type;
 };
 
 struct PrimitiveSpecifier final: public Specifier {
-    Primitive primitive;
+    smt::Primitive primitive;
 
     PrimitiveSpecifier(const std::string& typeName);
 };
@@ -166,10 +166,10 @@ struct Program final: public Node {
 // ------------------------ expressions ------------------------------
 
 struct Exp: public Node {
-    Shared<Type> type;
+    Shared<smt::Type> type;
 
     Exp() {}
-    Exp(Shared<Type> type): type(type) {}
+    Exp(Shared<smt::Type> type): type(type) {}
     virtual ~Exp() {}
 };
 
