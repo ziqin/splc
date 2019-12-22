@@ -12,7 +12,7 @@ using namespace std;
 template <typename T>
 inline static void execPreHook(const vector<Walker*>& walkers, T * self, Node * parent) {
     for (Walker * walker: walkers) {
-        auto hook = walker->getPreHook(typeid(*self));
+        auto hook = walker->getEnterHook(typeid(*self));
         if (hook) hook.value()(self, parent);
     }
 }
@@ -20,7 +20,7 @@ inline static void execPreHook(const vector<Walker*>& walkers, T * self, Node * 
 template <typename T>
 inline static void execPostHook(const vector<Walker*>& walkers, T * self, Node * parent) {
     for (Walker * walker: walkers) {
-        auto hook = walker->getPostHook(typeid(*self));
+        auto hook = walker->getLeaveHook(typeid(*self));
         if (hook) hook.value()(self, parent);
     }
 }

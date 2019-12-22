@@ -2,7 +2,6 @@
 #include <iostream>
 #include <memory>
 #include "parser.hpp"
-#include "ast_dump.hpp"
 #include "semantic.hpp"
 
 using namespace std;
@@ -10,6 +9,7 @@ using namespace std;
 const int CMD_ERR       = 0x1;
 const int IO_ERR        = 0x2;
 const int PARSING_ERR   = 0x4;
+const int SEMANTIC_ERR  = 0x8;
 
 
 static string targetPathOf(const string& srcPath) {
@@ -46,9 +46,20 @@ int main(int argc, const char ** argv) {
     fclose(srcFile);
     if (!ast) exit(PARSING_ERR);
 
-    auto dumpWalker = make_unique<AST::DumpWalker>(std::cout);
+    // semantic analysis
+    vector<smt::SemanticErrRecord> semanticErrs;
     auto scopeSetter = make_unique<smt::ScopeSetter>();
-    ast->traverse({ dumpWalker.get(), scopeSetter.get() }, nullptr);
+    auto structInit = make_unique<smt::StructInitializer>(semanticErrs); 
+    auto symbolSetter = make_unique<smt::SymbolSetter>(semanticErrs);
+    auto typeSynthesizer = make_unique<smt::TypeSynthesizer>(semanticErrs);
+    ast->traverse({ scopeSetter.get(), structInit.get() }, nullptr);
+    ast->traverse({ symbolSetter.get(), typeSynthesizer.get() }, nullptr);
+    if (semanticErrs.size() > 0) {
+        for (auto& err: semanticErrs) {
+            cerr << "Error type " << err.err - smt::ERR_TYPE0 << " at Line " << err.cause->loc.end.line << ": " << err.msg << endl;
+        }
+        exit(SEMANTIC_ERR);
+    }
 
     return 0;
 }

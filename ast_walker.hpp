@@ -15,12 +15,12 @@ using Hook = std::function<void(Node*,Node*)>;
 class Walker {
 public:
     virtual ~Walker() {}
-    virtual std::optional<Hook> getPreHook(std::type_index type) {
+    virtual std::optional<Hook> getEnterHook(std::type_index type) {
         auto hookItr = preHooks.find(type);
         if (hookItr != preHooks.end()) return hookItr->second;
         return std::nullopt;
     }
-    virtual std::optional<Hook> getPostHook(std::type_index type) {
+    virtual std::optional<Hook> getLeaveHook(std::type_index type) {
         auto hookItr = postHooks.find(type);
         if (hookItr != postHooks.end()) return hookItr->second;
         return std::nullopt;

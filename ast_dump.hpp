@@ -75,6 +75,18 @@ public:
             this->out(self, parent) << " member: " << self->member << std::endl;
         END_ENTER_HOOK(MemberExp);
 
+        BEG_ENTER_HOOK(LiteralExp);
+            auto& out = this->out(self, parent) << " value: ";
+            smt::Primitive primitive = dynamic_cast<const smt::PrimitiveType&>(self->type.value()).primitive;
+            switch (primitive) {
+                case smt::TYPE_CHAR: out << '\'' << self->charVal << '\''; break;
+                case smt::TYPE_INT: out << self->intVal; break;
+                case smt::TYPE_FLOAT: out << self->floatVal; break;
+                default: break;
+            }
+            out << std::endl;
+        END_ENTER_HOOK(LiteralExp);
+
         BEG_ENTER_HOOK(UnaryExp);
             auto& out = this->out(self, parent) << " operator: ";
             switch (self->opt) {
@@ -111,8 +123,8 @@ public:
         END_ENTER_HOOK(CallExp);
     }
 
-    std::optional<Hook> getPreHook(std::type_index type) override {
-        auto dedicatedHook = Walker::getPreHook(type);
+    std::optional<Hook> getEnterHook(std::type_index type) override {
+        auto dedicatedHook = Walker::getEnterHook(type);
         return dedicatedHook ? dedicatedHook : [this](Node * self, Node * parent) {
             this->out(self, parent) << std::endl;
         };

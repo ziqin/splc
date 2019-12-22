@@ -1,3 +1,4 @@
+#include <typeinfo>
 #include "semantic.hpp"
 #include "type.hpp"
 
@@ -26,12 +27,14 @@ ScopeSetter::ScopeSetter() {
     END_ENTER_HOOK(ForStmt);
 
     BEG_ENTER_HOOK(CompoundStmt);
-        self->scope = make_shared<SymbolTable>(parent->scope);
+        if (self->scope == nullptr) {
+            self->scope = make_shared<SymbolTable>(parent->scope);
+        }
     END_ENTER_HOOK(CompoundStmt);
 }
 
-optional<Hook> ScopeSetter::getPreHook(type_index type) {
-    auto dedicatedHook = Walker::getPreHook(type);
+optional<Hook> ScopeSetter::getEnterHook(type_index type) {
+    auto dedicatedHook = Walker::getEnterHook(type);
     return dedicatedHook ? dedicatedHook : [](Node *self, Node *parent) {
         if (self->scope == nullptr) { // scope has not been specified by its parent
             self->scope = parent->scope;
@@ -42,6 +45,10 @@ optional<Hook> ScopeSetter::getPreHook(type_index type) {
 
 void SemanticAnalyzer::report(SemanticErr errType, Node *cause, const std::string& msg) {
     errs.emplace_back(errType, cause, msg);
+    nodesWithErr.insert(cause->id);
+}
+
+void SemanticAnalyzer::report(Node *cause) {
     nodesWithErr.insert(cause->id);
 }
 
@@ -67,6 +74,13 @@ StructInitializer::StructInitializer(vector<SemanticErrRecord>& errStore): Seman
             for (Def *def: self->specifier->definitions) {
                 Shared<Type> fieldType = def->specifier->type;
                 for (Dec *dec: def->declarations) {
+                    auto arrField = dynamic_cast<const ArrDec*>(dec->declarator);
+                    if (arrField != nullptr) {
+                        for (auto dim = arrField->dimensions.rbegin(); dim != arrField->dimensions.rend(); ++dim) {
+                            fieldType = makeType<ArrayType>(fieldType, *dim);
+                        }
+                    }
+                    structType->fields.push_back(make_pair(fieldType, dec->declarator->identifier));
                     structType->fields.push_back(make_pair(fieldType, dec->declarator->identifier));
                 }
             }
@@ -109,7 +123,7 @@ SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyze
             }
             self->scope->setType(self->identifier, Shared<Type>(type));
         } else {
-            this->report(ERR_TYPE4, parent, "function is redefined");
+            this->report(ERR_TYPE4, self, "function " + self->identifier +" is redefined");
         }
     END_LEAVE_HOOK(FunDec);
 
@@ -124,11 +138,10 @@ SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyze
     END_ENTER_HOOK(Dec);
 
     BEG_LEAVE_HOOK(VarDec);
-        if (self->scope->canOverwrite(self->identifier)) {
-            self->scope->setType(self->identifier, this->typeRefs[self->id]);
-        } else {
-            this->report(ERR_TYPE3, self, "variable is redefined in the same scope");
+        if (!self->scope->canOverwrite(self->identifier)) {
+            this->report(ERR_TYPE3, self, "variable " + self->identifier + " is redefined in the same scope");
         }
+        self->scope->setType(self->identifier, this->typeRefs[self->id]);
     END_LEAVE_HOOK(VarDec);
 
     BEG_LEAVE_HOOK(ArrDec);
@@ -137,24 +150,27 @@ SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyze
             type = makeType<ArrayType>(type, *dim);
         }
         self->scope->setType(self->identifier, type);
-    END_LEAVE_HOOK(VarDec);
+    END_LEAVE_HOOK(ArrDec);
 }
 
 
-TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): SemanticAnalyzer(errStore) {
+// currently it synthesizes and checks types
+TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): SemanticAnalyzer(errStore) {   
     BEG_LEAVE_HOOK(IdExp);
         optional<Shared<Type>> defined = self->scope->getType(self->identifier);
         if (defined) {
             self->type = defined.value();
         } else {
-            this->report(ERR_TYPE1, self, "variable is used without definition");
+            this->report(ERR_TYPE1, self, "variable " + self->identifier + " is used without definition");
         }
     END_LEAVE_HOOK(IdExp);
 
     BEG_LEAVE_HOOK(CallExp);
         for (auto arg: self->arguments) {
-            if (this->hasErr(arg))
+            if (this->hasErr(arg)) {
+                this->report(self);
                 return;
+            }
         }
 
         optional<Shared<Type>> defined = self->scope->getType(self->identifier);
@@ -170,7 +186,7 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
                 if (argMatch) {
                     self->type = funcType.returned;
                 } else {
-                    this->report(ERR_TYPE9, self, "the function's arguments mismatch the declared parameters");
+                    this->report(ERR_TYPE9, self, "the arguments of function " + self->identifier + " mismatch the declared parameters");
                 }
             } catch (const exception& e) {
                 this->report(ERR_TYPE11, self, "applying function invocation operator on non-function names");
@@ -182,18 +198,36 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
 
     // TODO: check type compatibility instead of equivalence
     BEG_LEAVE_HOOK(AssignExp);
-        if (this->hasErr(self->left) && this->hasErr(self->right)) return;
-        if (*self->left->type != *self->right->type)
-            this->report(ERR_TYPE5, self, "unmatched types on both sides of assignment operator");
-        if (typeid(self->left) != typeid(IdExp*) &&
-            typeid(self->left) != typeid(ArrayExp*) &&
-            typeid(self->left) != typeid(MemberExp*)
+        if (this->hasErr(self->left) || this->hasErr(self->right)) {
+            this->report(self);
+            return;
+        }
+        if (typeid(*self->left) != typeid(IdExp) &&
+            typeid(*self->left) != typeid(ArrayExp) &&
+            typeid(*self->left) != typeid(MemberExp)
         )   this->report(ERR_TYPE6, self, "rvalue on the left side of assignment operator");
+        if (self->left->type.value() != self->right->type.value())
+            this->report(ERR_TYPE5, self, "unmatched types on both sides of assignment operator");
         self->type = self->left->type;
     END_LEAVE_HOOK(AssignExp);
 
+    BEG_LEAVE_HOOK(Dec);
+        if (this->hasErr(self->declarator) || (self->init != nullptr && this->hasErr(self->init))) {
+            this->report(self);
+            return;
+        }
+        if (self->init != nullptr &&
+            self->scope->getType(self->declarator->identifier).value().value() != self->init->type.value()
+        ) {
+            this->report(ERR_TYPE5, self, "unmatched types on both sides of assignment operator");
+        }
+    END_LEAVE_HOOK(Dec);
+
     BEG_LEAVE_HOOK(UnaryExp);
-        if (this->hasErr(self->argument)) return;
+        if (this->hasErr(self->argument)) {
+            this->report(self);
+            return;
+        }
         try {
             const PrimitiveType& type = as<PrimitiveType>(self->argument->type);
             if (type == TYPE_CHAR) this->report(ERR_TYPE7, self, "unmatched operand");
@@ -204,10 +238,13 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
     END_LEAVE_HOOK(UnaryExp);
 
     BEG_LEAVE_HOOK(BinaryExp);
-        if (this->hasErr(self->left) || this->hasErr(self->right)) return;
+        if (this->hasErr(self->left) || this->hasErr(self->right)) {
+            this->report(self);
+            return;
+        }
         Shared<Type> left = self->left->type, right = self->right->type;
-        if (typeid(left.get()) != typeid(PrimitiveType*) ||
-            typeid(right.get()) != typeid(PrimitiveType*) ||
+        if (typeid(left.value()) != typeid(PrimitiveType) ||
+            typeid(right.value()) != typeid(PrimitiveType) ||
             *left != *right
         ) {
             this->report(ERR_TYPE7, self, "unmatched operands");
@@ -217,23 +254,29 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
     END_LEAVE_HOOK(BinaryExp);
 
     BEG_LEAVE_HOOK(MemberExp);
-        if (this->hasErr(self->subject)) return;
+        if (this->hasErr(self->subject)) {
+            this->report(self);
+            return;
+        }
         Shared<Type> type = self->subject->type;
         try {
             const StructType& structType = as<StructType>(type);
             Shared<Type> fieldType = structType.getFieldType(self->member);
             if (fieldType == nullptr) {
-                this->report(ERR_TYPE14, self, "accessing an undefined structure member");
+                this->report(ERR_TYPE14, self, "accessing an undefined structure member " + self->member);
             } else {
                 self->type = fieldType;
             }
         } catch (const exception& e) {
-            this->report(ERR_TYPE13, self, "accessing member of non-structure variable");
+            this->report(ERR_TYPE13, self, "accessing member of non-structure variable " + self->member);
         }
     END_LEAVE_HOOK(MemberExp);
 
     BEG_LEAVE_HOOK(ArrayExp);
-        if (this->hasErr(self->subject) || this->hasErr(self->index)) return;
+        if (this->hasErr(self->subject) || this->hasErr(self->index)) {
+            this->report(self);
+            return;
+        }
         const ArrayType *arrayType = dynamic_cast<const ArrayType*>(self->subject->type.get());
         const PrimitiveType *indexType = dynamic_cast<const PrimitiveType*>(self->index->type.get());
         if (arrayType == nullptr) {
@@ -246,14 +289,39 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
         }
     END_LEAVE_HOOK(ArrayExp);
 
-    BEG_LEAVE_HOOK(FunDef);
-        Shared<Type> definedReturnType = self->specifier->type;
-        auto& statements = self->body->body;
-        if (statements.size() > 0) {
-            const ReturnStmt *lastStatement = dynamic_cast<const ReturnStmt*>(*statements.rbegin());
-            if (lastStatement != nullptr && *(lastStatement->argument->type) != *definedReturnType)
-                this->report(ERR_TYPE8, self, "the function's return value type mismatches the declared type");
-        }
-    END_LEAVE_HOOK(FunDef);
-}
+    BEG_ENTER_HOOK(FunDef);
+        this->funcReturnTypes[self->body->id] = self->specifier->type;
+    END_ENTER_HOOK(FunDef);
 
+    BEG_ENTER_HOOK(CompoundStmt);
+        auto returnType = this->funcReturnTypes[self->id];
+        for (auto stmt: self->body) {
+            this->funcReturnTypes[stmt->id] = returnType;
+        }
+    END_ENTER_HOOK(CompoundStmt);
+
+    BEG_ENTER_HOOK(IfStmt);
+        this->funcReturnTypes[self->consequent->id] = this->funcReturnTypes[self->id];
+        if (self->alternate != nullptr) {
+            this->funcReturnTypes[self->alternate->id] = this->funcReturnTypes[self->id];
+        }
+    END_ENTER_HOOK(IfStmt);
+
+    BEG_ENTER_HOOK(WhileStmt);
+        this->funcReturnTypes[self->body->id] = this->funcReturnTypes[self->id];
+    END_ENTER_HOOK(WhileStmt);
+
+    BEG_ENTER_HOOK(ForStmt);
+        this->funcReturnTypes[self->body->id] = this->funcReturnTypes[self->id];
+    END_ENTER_HOOK(ForStmt);
+
+    BEG_LEAVE_HOOK(ReturnStmt);
+        if (this->hasErr(self->argument)) {
+            this->report(self);
+            return;
+        }
+        if (this->funcReturnTypes[self->id].value() != self->argument->type.value()) {
+            this->report(ERR_TYPE8, self, "the function's return type mismatches the declared type");
+        }
+    END_LEAVE_HOOK(ReturnStmt);
+}
