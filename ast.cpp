@@ -93,6 +93,19 @@ void Def::traverse(const vector<Walker*>& walkers, Node * parent) {
     execPostHook(walkers, this, parent);
 }
 
+list<Tac*> Def::translate() {
+    list<Tac*> code;
+    for (auto dec: declarations) {
+        if (dec->init != nullptr) {
+            auto variable = makeTacOp<VariableOperand>(scope->getId(dec->declarator->identifier));
+            auto tp = makeTacOp<VariableOperand>(scope->createPlace());
+            code.splice(code.end(), dec->init->translate(tp));
+            code.push_back(new AssignTac(variable, tp));
+        }
+    }
+    return code;
+}
+
 
 ParamDec::ParamDec(Specifier * specifier, VarDec * declarator):
     specifier(specifier), declarator(declarator)
@@ -723,6 +736,9 @@ void CompoundStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
 
 list<Tac*> CompoundStmt::translate() {
     list<Tac*> code;
+    for (auto def: definitions) {
+        code.splice(code.end(), def->translate());
+    }
     for (auto stmt: body) {
         code.splice(code.end(), stmt->translate());
     }

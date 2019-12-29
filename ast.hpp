@@ -87,6 +87,7 @@ struct Def: public Node {
     Def(Specifier * specifier, const std::list<Dec*>& decList);
     ~Def();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate();
 };
 
 struct ParamDec: public Node {

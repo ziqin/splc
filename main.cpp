@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include "parser.hpp"
 #include "semantic.hpp"
@@ -21,7 +22,7 @@ static string targetPathOf(const string& srcPath) {
         throw invalid_argument("Invalid source file path!");
     }
 
-    return srcPath.substr(0, prefixLen) + ".out";
+    return srcPath.substr(0, prefixLen) + ".ir";
 }
 
 
@@ -65,6 +66,8 @@ int main(int argc, const char ** argv) {
     // intermediate code generation
     auto tacGenerator = make_unique<gen::TacGenerator>();
     ast->traverse({ tacGenerator.get() }, nullptr);
-    tacGenerator->printTac(cout);
+    ofstream fout(targetPath);
+    tacGenerator->printTac(fout);
+
     return 0;
 }
