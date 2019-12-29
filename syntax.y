@@ -469,12 +469,12 @@ Exp:
         $$->setLocation(&@$);
         }
     | LEX_ERR {
-        $$ = new AST::Exp;
+        $$ = new AST::IdExp("__lex_err__");
         hasErr = true;
         }
     | Exp LEX_ERR Exp  %prec ERROR {
         deleteAll($1, $3);
-        $$ = new AST::Exp;
+        $$ = new AST::IdExp("__lex_err__");
         hasErr = true;
         }
     | LP Exp %prec ERROR {

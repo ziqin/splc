@@ -14,7 +14,7 @@ install: main.elf
 	install -D $^ bin/splc
 
 # command line interface
-main.elf: main.o libparser.a libsemantic.a
+main.elf: main.o libparser.a libsemantic.a libgentac.a
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 main.o: main.cpp parser.hpp ast_dump.hpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -22,7 +22,7 @@ main.o: main.cpp parser.hpp ast_dump.hpp
 # lexical analysis & syntax analysis
 libparser.a: ast.o lex.yy.o syntax.tab.o
 	$(AR) rcs $@ $^
-ast.o: ast.cpp ast.hpp utils.hpp syntax.tab.h
+ast.o: ast.cpp ast.hpp utils.hpp tac.hpp type.hpp syntax.tab.h
 	$(CXX) $(CXXFLAGS) -c $<
 lex.yy.o: lex.yy.c syntax.tab.h ast.hpp
 	$(CXX) $(CXXFLAGS) -c $<
@@ -41,8 +41,14 @@ type.o: type.cpp type.hpp utils.hpp
 semantic.o: semantic.cpp semantic.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
+# intermediate-code generation
+libgentac.a: translate.o
+	$(AR) rcs $@ $^
+translate.o: translate.cpp translate.hpp tac.hpp
+	$(CXX) $(CXXFLAGS) -c $<
+
 clean:
-	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/ test/*.out tests/*.o tests/*.elf
+	@rm -rf *.yy.c *.tab.c *.tab.h *.output *.o *.a *.elf bin/ test/*.out test/*.log sample/*.log tests/*.o tests/*.elf
 
 test: unit-test diff-test
 

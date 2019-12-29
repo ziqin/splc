@@ -66,3 +66,4 @@ dkms.conf
 
 # program outputs
 *.out
+*.log

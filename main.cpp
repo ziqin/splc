@@ -3,6 +3,7 @@
 #include <memory>
 #include "parser.hpp"
 #include "semantic.hpp"
+#include "translate.hpp"
 
 using namespace std;
 
@@ -61,5 +62,9 @@ int main(int argc, const char ** argv) {
         exit(SEMANTIC_ERR);
     }
 
+    // intermediate code generation
+    auto tacGenerator = make_unique<gen::TacGenerator>();
+    ast->traverse({ tacGenerator.get() }, nullptr);
+    tacGenerator->printTac(cout);
     return 0;
 }

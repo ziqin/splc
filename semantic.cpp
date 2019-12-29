@@ -9,7 +9,7 @@ using namespace std;
 
 ScopeSetter::ScopeSetter() {
     BEG_ENTER_HOOK(Program);
-        self->scope = make_shared<SymbolTable>(nullptr);
+        self->scope = make_shared<SymbolTable>();
     END_ENTER_HOOK(Program);
 
     BEG_ENTER_HOOK(FunDef);

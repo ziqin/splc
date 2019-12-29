@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include "symbol_table.hpp"
+#include "tac.hpp"
 #include "type.hpp"
 #include "utils.hpp"
 
@@ -152,6 +153,7 @@ struct FunDef final: public ExtDef {
     FunDef(Specifier * specifier, FunDec * declarator, CompoundStmt * body);
     ~FunDef();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate();
 };
 
 struct Program final: public Node {
@@ -171,6 +173,7 @@ struct Exp: public Node {
     Exp() {}
     Exp(Shared<smt::Type> type): type(type) {}
     virtual ~Exp() {}
+    virtual std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) = 0;
 };
 
 
@@ -184,6 +187,7 @@ struct LiteralExp final: public Exp {
     LiteralExp(char);
     LiteralExp(int);
     LiteralExp(double);
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 
@@ -191,6 +195,7 @@ struct IdExp final: public Exp {
     std::string identifier;
 
     IdExp(const std::string&);
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 struct ArrayExp: public Exp {
@@ -199,6 +204,9 @@ struct ArrayExp: public Exp {
     ArrayExp(Exp * subject, Exp * index);
     ~ArrayExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
+        throw std::runtime_error("not implemented");
+    }
 };
 
 struct MemberExp: public Exp {
@@ -208,6 +216,9 @@ struct MemberExp: public Exp {
     MemberExp(Exp * subject, const std::string& member);
     ~MemberExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
+        throw std::runtime_error("not implemented");
+    }
 };
 
 enum Operator {
@@ -233,6 +244,7 @@ struct UnaryExp: public Exp {
     UnaryExp(Operator opt, Exp * argument);
     ~UnaryExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 struct BinaryExp: public Exp {
@@ -242,6 +254,7 @@ struct BinaryExp: public Exp {
     BinaryExp(Exp * left, Operator opt, Exp * right);
     ~BinaryExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 struct AssignExp: public Exp {
@@ -250,6 +263,7 @@ struct AssignExp: public Exp {
     AssignExp(Exp * left, Exp * right);
     ~AssignExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 struct CallExp: public Exp {
@@ -259,12 +273,15 @@ struct CallExp: public Exp {
     CallExp(const std::string& identifier, const std::list<Exp*>& arguments = {});
     ~CallExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
 };
 
 
 // ------------------------------ statements -------------------------------------
 
-struct Stmt: public Node {};
+struct Stmt: public Node {
+    virtual std::list<gen::Tac*> translate() = 0;
+};
 
 struct ExpStmt final: public Stmt {
     Exp * expression;
@@ -274,6 +291,7 @@ struct ExpStmt final: public Stmt {
         delete expression;
     }
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 struct ReturnStmt final: public Stmt {
@@ -284,6 +302,7 @@ struct ReturnStmt final: public Stmt {
         delete argument;
     }
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 struct IfStmt final: public Stmt {
@@ -292,6 +311,7 @@ struct IfStmt final: public Stmt {
 
     IfStmt(Exp * test, Stmt * consequent, Stmt * alternate = nullptr);
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 struct WhileStmt final: public Stmt {
@@ -300,6 +320,7 @@ struct WhileStmt final: public Stmt {
 
     WhileStmt(Exp * test, Stmt * body);
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 struct ForStmt final: public Stmt {
@@ -308,6 +329,7 @@ struct ForStmt final: public Stmt {
 
     ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body);
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 struct CompoundStmt final: public Stmt {
@@ -322,6 +344,7 @@ struct CompoundStmt final: public Stmt {
         for (auto stmt: body) delete stmt;
     }
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    std::list<gen::Tac*> translate() override;
 };
 
 } // namespace AST
