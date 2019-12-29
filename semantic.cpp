@@ -101,6 +101,15 @@ StructInitializer::StructInitializer(vector<SemanticErrRecord>& errStore): Seman
 
 // after struct initializer finishes its walk
 SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyzer(errStore) {
+    BEG_ENTER_HOOK(Program);
+        auto readType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::TYPE_INT));
+        auto writeType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::TYPE_INT), vector<Shared<Type>>{
+            makeType<PrimitiveType>(Primitive::TYPE_INT)
+        });
+        self->scope->setType("read", readType);
+        self->scope->setType("write", writeType);
+    END_ENTER_HOOK(Program);
+
     BEG_ENTER_HOOK(ExtVarDef);
         for (VarDec *var: self->varDecs) {
             this->typeRefs[var->nodeId] = self->specifier->type;
