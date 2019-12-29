@@ -24,8 +24,8 @@ private:
     std::unordered_map<unsigned, unsigned> indents;
 
     std::ostream& out(Node * self, Node * parent) {
-        unsigned indent = parent ? indents[parent->id] + 2 : 0;
-        indents[self->id] = indent;
+        unsigned indent = parent ? indents[parent->nodeId] + 2 : 0;
+        indents[self->nodeId] = indent;
         for (unsigned i = 0; i < indent; ++i) outStream << ' ';
         outStream << fullTypeName(*self) << ' ' << self->loc;
         return outStream;

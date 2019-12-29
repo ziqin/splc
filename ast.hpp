@@ -46,7 +46,7 @@ struct Location {
 };
 
 struct Node {
-    unsigned id;
+    unsigned nodeId;
     Location loc;
     std::shared_ptr<smt::SymbolTable> scope;
     Node();
@@ -61,7 +61,7 @@ struct Node {
 struct VarDec: public Node {
     std::string identifier;
 
-    VarDec(const std::string& id): identifier(id) {}
+    VarDec(const std::string& identifier): identifier(identifier) {}
 };
 
 struct ArrDec final: public VarDec {
@@ -101,7 +101,7 @@ struct FunDec: public Node {
     std::string identifier;
     std::vector<ParamDec*> parameters;
 
-    FunDec(const std::string& id, const std::list<ParamDec*>& varList = {});
+    FunDec(const std::string& identifier, const std::list<ParamDec*>& varList = {});
     ~FunDec();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
@@ -120,7 +120,7 @@ struct StructSpecifier final: public Specifier {
     std::string identifier;
     std::vector<Def*> definitions;
 
-    StructSpecifier(const std::string& id, const std::list<Def*>& defList = {});
+    StructSpecifier(const std::string& identifier, const std::list<Def*>& defList = {});
     ~StructSpecifier();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };
@@ -256,7 +256,7 @@ struct CallExp: public Exp {
     std::string identifier;
     std::vector<Exp*> arguments;
 
-    CallExp(const std::string& id, const std::list<Exp*>& arguments = {});
+    CallExp(const std::string& identifier, const std::list<Exp*>& arguments = {});
     ~CallExp();
     void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
 };

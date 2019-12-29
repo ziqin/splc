@@ -27,7 +27,7 @@ inline static void execPostHook(const vector<Walker*>& walkers, T * self, Node *
 
 Node::Node() {
     static int gid = 0;
-    id = gid++;
+    nodeId = gid++;
 }
 
 void Node::traverse(const vector<Walker*>& walkers, Node * parent) {
@@ -113,8 +113,8 @@ void ParamDec::traverse(const vector<Walker*>& walkers, Node * parent) {
 }
 
 
-FunDec::FunDec(const string& id, const list<ParamDec*>& varList):
-    identifier(id), parameters(varList.begin(), varList.end())
+FunDec::FunDec(const string& identifier, const list<ParamDec*>& varList):
+    identifier(identifier), parameters(varList.begin(), varList.end())
 {
     if (hasNull(this->parameters)) {
         deleteAll(this->parameters);
@@ -149,8 +149,8 @@ PrimitiveSpecifier::PrimitiveSpecifier(const string& typeName) {
 }
 
 
-StructSpecifier::StructSpecifier(const string& id, const list<Def*>& defList):
-    identifier(id), definitions(defList.begin(), defList.end())
+StructSpecifier::StructSpecifier(const string& identifier, const list<Def*>& defList):
+    identifier(identifier), definitions(defList.begin(), defList.end())
 {
     if (hasNull(this->definitions)) {
         deleteAll(this->definitions);
@@ -264,12 +264,12 @@ LiteralExp::LiteralExp(double val):
     floatVal(val) {}
 
 
-IdExp::IdExp(const std::string& id): identifier(id) {
-    auto itr = id.begin();
-    if (itr == id.end()) throw invalid_argument("id cannot be empty");
-    if (!isalpha(*itr) && *itr != '_') throw invalid_argument("illegal id");
-    for (++itr; itr != id.end(); ++itr) {
-        if (!isalnum(*itr) && *itr != '_') throw invalid_argument("illegal id");
+IdExp::IdExp(const std::string& identifier): identifier(identifier) {
+    auto itr = identifier.begin();
+    if (itr == identifier.end()) throw invalid_argument("identifier cannot be empty");
+    if (!isalpha(*itr) && *itr != '_') throw invalid_argument("illegal identifier");
+    for (++itr; itr != identifier.end(); ++itr) {
+        if (!isalnum(*itr) && *itr != '_') throw invalid_argument("illegal identifier");
     }
 }
 
@@ -372,8 +372,8 @@ void AssignExp::traverse(const vector<Walker*>& walkers, Node * parent) {
 }
 
 
-CallExp::CallExp(const std::string& id, const list<Exp*>& arguments):
-    identifier(id), arguments(arguments.begin(), arguments.end())
+CallExp::CallExp(const std::string& identifier, const list<Exp*>& arguments):
+    identifier(identifier), arguments(arguments.begin(), arguments.end())
 {
     if (hasNull(this->arguments)) {
         deleteAll(this->arguments);

@@ -45,15 +45,15 @@ optional<Hook> ScopeSetter::getEnterHook(type_index type) {
 
 void SemanticAnalyzer::report(SemanticErr errType, Node *cause, const std::string& msg) {
     errs.emplace_back(errType, cause, msg);
-    nodesWithErr.insert(cause->id);
+    nodesWithErr.insert(cause->nodeId);
 }
 
 void SemanticAnalyzer::report(Node *cause) {
-    nodesWithErr.insert(cause->id);
+    nodesWithErr.insert(cause->nodeId);
 }
 
 bool SemanticAnalyzer::hasErr(Node *node) const {
-    return nodesWithErr.find(node->id) != nodesWithErr.end();
+    return nodesWithErr.find(node->nodeId) != nodesWithErr.end();
 }
 
 
@@ -103,21 +103,21 @@ StructInitializer::StructInitializer(vector<SemanticErrRecord>& errStore): Seman
 SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyzer(errStore) {
     BEG_ENTER_HOOK(ExtVarDef);
         for (VarDec *var: self->varDecs) {
-            this->typeRefs[var->id] = self->specifier->type;
+            this->typeRefs[var->nodeId] = self->specifier->type;
         }
     END_ENTER_HOOK(ExtVarDef);
 
     BEG_ENTER_HOOK(ParamDec);
-        this->typeRefs[self->declarator->id] = self->specifier->type;
+        this->typeRefs[self->declarator->nodeId] = self->specifier->type;
     END_ENTER_HOOK(ParamDec);
 
     BEG_ENTER_HOOK(FunDef);
-        this->typeRefs[self->declarator->id] = self->specifier->type;
+        this->typeRefs[self->declarator->nodeId] = self->specifier->type;
     END_ENTER_HOOK(FunDef);
 
     BEG_LEAVE_HOOK(FunDec);
         if (self->scope->canOverwrite(self->identifier)) {
-            FunctionType *type = new FunctionType(this->typeRefs[self->id]);
+            FunctionType *type = new FunctionType(this->typeRefs[self->nodeId]);
             for (ParamDec *para: self->parameters) {
                 type->parameters.push_back(para->specifier->type);
             }
@@ -129,23 +129,23 @@ SymbolSetter::SymbolSetter(vector<SemanticErrRecord>& errStore): SemanticAnalyze
 
     BEG_ENTER_HOOK(Def);
         for (Dec *dec: self->declarations) {
-            this->typeRefs[dec->id] = self->specifier->type;
+            this->typeRefs[dec->nodeId] = self->specifier->type;
         }
     END_ENTER_HOOK(Def);
 
     BEG_ENTER_HOOK(Dec);
-        this->typeRefs[self->declarator->id] = this->typeRefs[self->id];
+        this->typeRefs[self->declarator->nodeId] = this->typeRefs[self->nodeId];
     END_ENTER_HOOK(Dec);
 
     BEG_LEAVE_HOOK(VarDec);
         if (!self->scope->canOverwrite(self->identifier)) {
             this->report(ERR_TYPE3, self, "variable " + self->identifier + " is redefined in the same scope");
         }
-        self->scope->setType(self->identifier, this->typeRefs[self->id]);
+        self->scope->setType(self->identifier, this->typeRefs[self->nodeId]);
     END_LEAVE_HOOK(VarDec);
 
     BEG_LEAVE_HOOK(ArrDec);
-        Shared<Type> type = this->typeRefs[self->id];
+        Shared<Type> type = this->typeRefs[self->nodeId];
         for (auto dim = self->dimensions.rbegin(); dim != self->dimensions.rend(); ++dim) {
             type = makeType<ArrayType>(type, *dim);
         }
@@ -290,29 +290,29 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
     END_LEAVE_HOOK(ArrayExp);
 
     BEG_ENTER_HOOK(FunDef);
-        this->funcReturnTypes[self->body->id] = self->specifier->type;
+        this->funcReturnTypes[self->body->nodeId] = self->specifier->type;
     END_ENTER_HOOK(FunDef);
 
     BEG_ENTER_HOOK(CompoundStmt);
-        auto returnType = this->funcReturnTypes[self->id];
+        auto returnType = this->funcReturnTypes[self->nodeId];
         for (auto stmt: self->body) {
-            this->funcReturnTypes[stmt->id] = returnType;
+            this->funcReturnTypes[stmt->nodeId] = returnType;
         }
     END_ENTER_HOOK(CompoundStmt);
 
     BEG_ENTER_HOOK(IfStmt);
-        this->funcReturnTypes[self->consequent->id] = this->funcReturnTypes[self->id];
+        this->funcReturnTypes[self->consequent->nodeId] = this->funcReturnTypes[self->nodeId];
         if (self->alternate != nullptr) {
-            this->funcReturnTypes[self->alternate->id] = this->funcReturnTypes[self->id];
+            this->funcReturnTypes[self->alternate->nodeId] = this->funcReturnTypes[self->nodeId];
         }
     END_ENTER_HOOK(IfStmt);
 
     BEG_ENTER_HOOK(WhileStmt);
-        this->funcReturnTypes[self->body->id] = this->funcReturnTypes[self->id];
+        this->funcReturnTypes[self->body->nodeId] = this->funcReturnTypes[self->nodeId];
     END_ENTER_HOOK(WhileStmt);
 
     BEG_ENTER_HOOK(ForStmt);
-        this->funcReturnTypes[self->body->id] = this->funcReturnTypes[self->id];
+        this->funcReturnTypes[self->body->nodeId] = this->funcReturnTypes[self->nodeId];
     END_ENTER_HOOK(ForStmt);
 
     BEG_LEAVE_HOOK(ReturnStmt);
@@ -320,7 +320,7 @@ TypeSynthesizer::TypeSynthesizer(std::vector<SemanticErrRecord>& errStore): Sema
             this->report(self);
             return;
         }
-        if (this->funcReturnTypes[self->id].value() != self->argument->type.value()) {
+        if (this->funcReturnTypes[self->nodeId].value() != self->argument->type.value()) {
             this->report(ERR_TYPE8, self, "the function's return type mismatches the declared type");
         }
     END_LEAVE_HOOK(ReturnStmt);
