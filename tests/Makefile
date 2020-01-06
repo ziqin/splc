@@ -7,7 +7,7 @@ LIB=-L../ -lparser -lsemantic -lfl -ly
 test: test.elf
 	./$<
 
-test.elf: test_driver.o test_type.o test_ast.o test_utils.o test_walker.o
+test.elf: test_driver.o test_type.o test_ast.o test_utils.o test_visitor.o
 	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIB)
 
 test_driver.o: test_driver.cpp
@@ -22,7 +22,7 @@ test_type.o: test_type.cpp ../type.hpp ../type.cpp ../symbol_table.hpp
 test_ast.o: test_ast.cpp ../ast.hpp ../ast.cpp
 	$(CXX) -c $< $(CXXFLAGS) $(INC)
 
-test_walker.o: test_walker.cpp ../ast_walker.hpp
+test_visitor.o: test_visitor.cpp ../ast_visitor.hpp
 	$(CXX) -c $< $(CXXFLAGS) $(INC)
 
 clean:

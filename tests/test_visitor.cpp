@@ -1,24 +1,21 @@
 #include <catch2/catch.hpp>
 #include <memory>
 #include "ast.hpp"
-#include "ast_walker.hpp"
+#include "ast_visitor.hpp"
 #include "semantic.hpp"
 
 using namespace std;
 using namespace AST;
 
 
-class FuncDefWalker: public Walker {
+class FuncDefVisitor: public Visitor {
 public:
-    FuncDefWalker() {
-        preHooks[typeid(FunDef)] = [](Node * current, Node * parent) {
-            auto self = dynamic_cast<FunDef*>(current);
-            CHECK(self->declarator->identifier == "foo");
-        };
-        postHooks[typeid(CompoundStmt)] = [](Node * current, Node * parent) {
-            auto self = dynamic_cast<CompoundStmt*>(current);
-            CHECK(self->definitions.size() == 0);
-        };
+    void enter(FunDef *self, Node *parent) {
+        CHECK(self->declarator->identifier == "foo");
+    }
+
+    void leave(CompoundStmt *self, Node *parent) {
+        CHECK(self->definitions.size() == 0);
     }
 };
 
@@ -31,7 +28,7 @@ TEST_CASE("simple walker works", "[ast-visitor]") {
         auto funcDec = new FunDec("foo", { param });
         auto func = make_unique<FunDef>(specifier, funcDec, compStmt);
 
-        auto testWalker = make_unique<FuncDefWalker>();
+        auto testWalker = make_unique<FuncDefVisitor>();
         func->traverse({ testWalker.get() }, nullptr);
     }
 }

@@ -5,17 +5,18 @@
 #include <vector>
 #include <unordered_set>
 #include "ast.hpp"
-
-#define ENABLE_HOOK_MACRO
-#include "ast_walker.hpp"
+#include "ast_visitor.hpp"
 
 namespace smt {
 
 
-class ScopeSetter: public AST::Walker {
+class ScopeSetter: public AST::Visitor {
 public:
-    ScopeSetter();
-    std::optional<AST::Hook> getEnterHook(std::type_index) override;
+    void defaultEnter(AST::Node *, AST::Node *) override;
+    void enter(AST::Program *, AST::Node *) override;
+    void enter(AST::FunDef *, AST::Node *) override;
+    void enter(AST::ForStmt *, AST::Node *) override;
+    void enter(AST::CompoundStmt *, AST::Node *) override;
 };
 
 
@@ -49,7 +50,7 @@ struct SemanticErrRecord {
 };
 
 
-class SemanticAnalyzer: public AST::Walker {
+class SemanticAnalyzer: public AST::Visitor {
 public:
     SemanticAnalyzer(std::vector<SemanticErrRecord>& errStore): errs(errStore) {}
 
@@ -68,26 +69,57 @@ class StructInitializer final: public SemanticAnalyzer {
 private:
     std::unordered_map<std::string, Shared<Type>> structures;
 public:
-    StructInitializer(std::vector<SemanticErrRecord>&);
+    StructInitializer(std::vector<SemanticErrRecord>& errStore):
+        SemanticAnalyzer(errStore) {}
+    void enter(AST::StructDef *, AST::Node *) override;
+    void leave(AST::StructDef *, AST::Node *) override;
+    void enter(AST::StructSpecifier *, AST::Node *) override;
 };
 
 
+// after struct initializer finishes its walk
 class SymbolSetter final: public SemanticAnalyzer {
 private:
     std::unordered_map<unsigned, Shared<Type>> typeRefs;
 public:
-    SymbolSetter(std::vector<SemanticErrRecord>&);
+    SymbolSetter(std::vector<SemanticErrRecord>& errStore):
+        SemanticAnalyzer(errStore) {}
+    void enter(AST::Program *, AST::Node *) override;
+    void enter(AST::ExtVarDef *, AST::Node *) override;
+    void enter(AST::ParamDec *, AST::Node *) override;
+    void enter(AST::FunDef *, AST::Node *) override;
+    void enter(AST::FunDec *, AST::Node *) override;
+    void enter(AST::Def *, AST::Node *) override;
+    void enter(AST::Dec *, AST::Node *) override;
+    void leave(AST::VarDec *, AST::Node *) override;
+    void leave(AST::ArrDec *, AST::Node *) override;
 };
 
 
+// currently it synthesizes and checks types
 class TypeSynthesizer final: public SemanticAnalyzer {
 private:
     std::unordered_map<unsigned, Shared<Type>> funcReturnTypes;
 public:
-    TypeSynthesizer(std::vector<SemanticErrRecord>&);
+    TypeSynthesizer(std::vector<SemanticErrRecord>& errStore):
+        SemanticAnalyzer(errStore) {}
+    void leave(AST::IdExp *, AST::Node *) override;
+    void leave(AST::CallExp *, AST::Node *) override;
+    void leave(AST::AssignExp *, AST::Node *) override;
+    void leave(AST::Dec *, AST::Node *) override;
+    void leave(AST::UnaryExp *, AST::Node *) override;
+    void leave(AST::BinaryExp *, AST::Node *) override;
+    void leave(AST::MemberExp *, AST::Node *) override;
+    void leave(AST::ArrayExp *, AST::Node *) override;
+    void enter(AST::FunDef *, AST::Node *) override;
+    void enter(AST::CompoundStmt *, AST::Node *) override;
+    void enter(AST::IfStmt *, AST::Node *) override;
+    void enter(AST::WhileStmt *, AST::Node *) override;
+    void enter(AST::ForStmt *, AST::Node *) override;
+    void leave(AST::ReturnStmt *, AST::Node *) override;
 };
 
 
-}
+} // namespace smt
 
 #endif // SEMANTIC_HPP

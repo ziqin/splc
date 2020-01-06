@@ -2,7 +2,7 @@
 #include <exception>
 #include <typeinfo>
 #include "ast.hpp"
-#include "ast_walker.hpp"
+#include "ast_visitor.hpp"
 #include "syntax.tab.h"
 #include "type.hpp"
 
@@ -12,29 +12,23 @@ using namespace gen;
 
 
 template <typename T>
-inline static void execPreHook(const vector<Walker*>& walkers, T * self, Node * parent) {
-    for (Walker * walker: walkers) {
-        auto hook = walker->getEnterHook(typeid(*self));
-        if (hook) hook.value()(self, parent);
+inline static void execEnter(initializer_list<Visitor*> visitors, T *self, Node *parent) {
+    for (Visitor *visitor: visitors) {
+        visitor->enter(self, parent);
     }
 }
 
 template <typename T>
-inline static void execPostHook(const vector<Walker*>& walkers, T * self, Node * parent) {
-    for (Walker * walker: walkers) {
-        auto hook = walker->getLeaveHook(typeid(*self));
-        if (hook) hook.value()(self, parent);
+inline static void execLeave(initializer_list<Visitor*> visitors, T *self, Node *parent) {
+    for (Visitor *visitor: visitors) {
+        visitor->leave(self, parent);
     }
 }
+
 
 Node::Node() {
     static int gid = 0;
     nodeId = gid++;
-}
-
-void Node::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    execPostHook(walkers, this, parent);
 }
 
 void Node::setLocation(const YYLTYPE * location) {
@@ -44,8 +38,54 @@ void Node::setLocation(const YYLTYPE * location) {
     loc.end.column = location->last_column;
 }
 
+void Node::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
 
-// ----------------------------- misc --------------------------------
+void Node::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
+
+
+Program::Program(const list<ExtDef*>& extDefList):
+    extDefs(extDefList.begin(), extDefList.end())
+{
+    if (hasNull(extDefs)) {
+        deleteAll(extDefs);
+        throw invalid_argument("extDefs cannot be null");
+    }
+}
+
+Program::~Program() {
+    deleteAll(extDefs);
+}
+
+void Program::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void Program::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    for (auto def: extDefs) def->traverse(visitors, this);
+    execLeave(visitors, this, parent);
+}
+
+void Program::traverse(initializer_list<Visitor*> visitors) {
+    traverse(visitors, nullptr);
+}
+
+// ----------------------------- declaration/definition --------------------------------
+
+void VarDec::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void VarDec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
+
 
 ArrDec::ArrDec(const VarDec& declarator, int dim): VarDec(declarator.identifier) {
     try {
@@ -53,6 +93,15 @@ ArrDec::ArrDec(const VarDec& declarator, int dim): VarDec(declarator.identifier)
         dimensions = prefix.dimensions;
     } catch (const bad_cast& e) {}
     dimensions.push_back(dim);
+}
+
+void ArrDec::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ArrDec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -64,12 +113,15 @@ Dec::~Dec() {
     deleteAll(declarator, init);
 }
 
+void Dec::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
 
-void Dec::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    declarator->traverse(walkers, this);
-    if (init) init->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void Dec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    declarator->traverse(visitors, this);
+    if (init) init->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -86,11 +138,15 @@ Def::~Def() {
     deleteAll(specifier, declarations);
 }
 
-void Def::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, this);
-    for (auto dec: declarations) dec->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void Def::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void Def::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    specifier->traverse(visitors, this);
+    for (auto dec: declarations) dec->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> Def::translate() {
@@ -120,11 +176,15 @@ ParamDec::~ParamDec() {
     deleteAll(specifier, declarator);
 }
 
-void ParamDec::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, this);
-    declarator->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ParamDec::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ParamDec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    specifier->traverse(visitors, this);
+    declarator->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -141,10 +201,24 @@ FunDec::~FunDec() {
     deleteAll(parameters);
 }
 
-void FunDec::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    for (auto para: parameters) para->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void FunDec::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void FunDec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    for (auto para: parameters) para->traverse(visitors, this);
+    execLeave(visitors, this, parent);
+}
+
+
+void Specifier::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void Specifier::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -163,6 +237,15 @@ PrimitiveSpecifier::PrimitiveSpecifier(const string& typeName) {
     }
 }
 
+void PrimitiveSpecifier::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void PrimitiveSpecifier::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
+
 
 StructSpecifier::StructSpecifier(const string& identifier, const list<Def*>& defList):
     identifier(identifier), definitions(defList.begin(), defList.end())
@@ -178,10 +261,24 @@ StructSpecifier::~StructSpecifier() {
     deleteAll(definitions);
 }
 
-void StructSpecifier::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    for (auto def: definitions) def->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void StructSpecifier::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void StructSpecifier::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    for (auto def: definitions) def->traverse(visitors, this);
+    execLeave(visitors, this, parent);
+}
+
+
+void ExtDef::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ExtDef::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -198,13 +295,17 @@ ExtVarDef::~ExtVarDef() {
     deleteAll(specifier, varDecs);
 }
 
-
-void ExtVarDef::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, this);
-    for (auto dec: varDecs) dec->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ExtVarDef::visit(Visitor *visitor) {
+    visitor->visit(this);
 }
+
+void ExtVarDef::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    specifier->traverse(visitors, this);
+    for (auto dec: varDecs) dec->traverse(visitors, this);
+    execLeave(visitors, this, parent);
+}
+
 
 StructDef::StructDef(Specifier * specifier):
     specifier(dynamic_cast<StructSpecifier*>(specifier))
@@ -216,10 +317,14 @@ StructDef::~StructDef() {
     delete specifier;
 }
 
-void StructDef::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void StructDef::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void StructDef::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    specifier->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -236,12 +341,16 @@ FunDef::~FunDef() {
     deleteAll(specifier, declarator, body);
 }
 
-void FunDef::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    specifier->traverse(walkers, this);
-    declarator->traverse(walkers, this);
-    body->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void FunDef::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void FunDef::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    specifier->traverse(visitors, this);
+    declarator->traverse(visitors, this);
+    body->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 // TODO: handle non-integer arguments
@@ -255,25 +364,6 @@ list<Tac*> FunDef::translate() {
     return code;
 }
 
-
-Program::Program(const list<ExtDef*>& extDefList):
-    extDefs(extDefList.begin(), extDefList.end())
-{
-    if (hasNull(extDefs)) {
-        deleteAll(extDefs);
-        throw invalid_argument("extDefs cannot be null");
-    }
-}
-
-Program::~Program() {
-    deleteAll(extDefs);
-}
-
-void Program::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    for (auto def: extDefs) def->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
-}
 
 // ----------------------- expressions ---------------------------
 
@@ -348,6 +438,16 @@ list<Tac*> translateCondExp(const Exp *exp, std::shared_ptr<TacOperand> place) {
 }
 
 
+void Exp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void Exp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
+
+
 LiteralExp::LiteralExp(char val):
     Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_CHAR))),
     charVal(val) {}
@@ -359,6 +459,15 @@ LiteralExp::LiteralExp(int val):
 LiteralExp::LiteralExp(double val):
     Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_FLOAT))),
     floatVal(val) {}
+
+void LiteralExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void LiteralExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
 
 list<Tac*> LiteralExp::translate(shared_ptr<TacOperand> place) {
     shared_ptr<TacOperand> value;
@@ -388,10 +497,20 @@ IdExp::IdExp(const string& identifier): identifier(identifier) {
     }
 }
 
+void IdExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void IdExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
+
 list<Tac*> IdExp::translate(shared_ptr<TacOperand> place) {
     auto variable = makeTacOp<VariableOperand>(scope->getId(identifier));
     return { new AssignTac(place, variable) };
 }
+
 
 ArrayExp::ArrayExp(Exp * subject, Exp * index): subject(subject), index(index) {
     if (hasNull(this->subject, this->index)) {
@@ -404,11 +523,15 @@ ArrayExp::~ArrayExp() {
     deleteAll(subject, index);
 }
 
-void ArrayExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    subject->traverse(walkers, this);
-    index->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ArrayExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ArrayExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    subject->traverse(visitors, this);
+    index->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -422,11 +545,14 @@ MemberExp::~MemberExp() {
     delete subject;
 }
 
+void MemberExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
 
-void MemberExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    subject->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void MemberExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    subject->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 
@@ -443,10 +569,14 @@ UnaryExp::~UnaryExp() {
     delete argument;
 }
 
-void UnaryExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    argument->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void UnaryExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void UnaryExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    argument->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> UnaryExp::translate(shared_ptr<TacOperand> place) {
@@ -480,11 +610,15 @@ BinaryExp::~BinaryExp() {
     deleteAll(left, right);
 }
 
-void BinaryExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    left->traverse(walkers, this);
-    right->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void BinaryExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void BinaryExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    left->traverse(visitors, this);
+    right->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> BinaryExp::translate(shared_ptr<TacOperand> place) {
@@ -537,11 +671,15 @@ AssignExp::~AssignExp() {
     deleteAll(left, right);
 }
 
-void AssignExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    left->traverse(walkers, this);
-    right->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void AssignExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void AssignExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    left->traverse(visitors, this);
+    right->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> AssignExp::translate(shared_ptr<TacOperand> place) {
@@ -571,6 +709,16 @@ CallExp::~CallExp() {
     deleteAll(arguments);
 }
 
+void CallExp::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void CallExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    for (auto arg: arguments) arg->traverse(visitors, this);
+    execLeave(visitors, this, parent);
+}
+
 // TODO: enforce argument number for built-in I/O functions during semantic analysis
 list<Tac*> CallExp::translate(shared_ptr<TacOperand> place) {
     list<Tac*> code;
@@ -598,24 +746,30 @@ list<Tac*> CallExp::translate(shared_ptr<TacOperand> place) {
 }
 
 
-void CallExp::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    for (auto arg: arguments) arg->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+// ------------------------- statements -----------------------
+
+void Stmt::visit(Visitor *visitor) {
+    visitor->visit(this);
 }
 
+void Stmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    execLeave(visitors, this, parent);
+}
 
-
-// ------------------------- statements -----------------------
 
 ExpStmt::ExpStmt(Exp * expression): expression(expression) {
     if (expression == nullptr) throw invalid_argument("expression cannot be null");
 }
 
-void ExpStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    expression->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ExpStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ExpStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    expression->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> ExpStmt::translate() {
@@ -624,10 +778,14 @@ list<Tac*> ExpStmt::translate() {
 }
 
 
-void ReturnStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    if (argument) argument->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ReturnStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ReturnStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    if (argument) argument->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> ReturnStmt::translate() {
@@ -647,12 +805,16 @@ IfStmt::IfStmt(Exp * test, Stmt * consequent, Stmt * alternate):
     }
 }
 
-void IfStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    test->traverse(walkers, this);
-    consequent->traverse(walkers, this);
-    if (alternate) alternate->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void IfStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void IfStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    test->traverse(visitors, this);
+    consequent->traverse(visitors, this);
+    if (alternate) alternate->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> IfStmt::translate() {
@@ -682,11 +844,15 @@ WhileStmt::WhileStmt(Exp * test, Stmt * body): test(test), body(body) {
     }
 }
 
-void WhileStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    test->traverse(walkers, this);
-    body->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void WhileStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void WhileStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    test->traverse(visitors, this);
+    body->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> WhileStmt::translate() {
@@ -712,13 +878,17 @@ ForStmt::ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body):
     }
 }
 
-void ForStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    if (init) init->traverse(walkers, this);
-    if (test) test->traverse(walkers, this);
-    if (update) update->traverse(walkers, this);
-    body->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void ForStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void ForStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    if (init) init->traverse(visitors, this);
+    if (test) test->traverse(visitors, this);
+    if (update) update->traverse(visitors, this);
+    body->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> ForStmt::translate() {
@@ -727,11 +897,15 @@ list<Tac*> ForStmt::translate() {
 }
 
 
-void CompoundStmt::traverse(const vector<Walker*>& walkers, Node * parent) {
-    execPreHook(walkers, this, parent);
-    for (auto def: definitions) def->traverse(walkers, this);
-    for (auto stmt: body) stmt->traverse(walkers, this);
-    execPostHook(walkers, this, parent);
+void CompoundStmt::visit(Visitor *visitor) {
+    visitor->visit(this);
+}
+
+void CompoundStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
+    execEnter(visitors, this, parent);
+    for (auto def: definitions) def->traverse(visitors, this);
+    for (auto stmt: body) stmt->traverse(visitors, this);
+    execLeave(visitors, this, parent);
 }
 
 list<Tac*> CompoundStmt::translate() {

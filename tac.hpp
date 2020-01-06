@@ -41,7 +41,7 @@ struct PointerOperand: public TacOperand {
 
 // three address code
 struct Tac {
-    virtual ~Tac() {}
+    virtual ~Tac() = default;
     virtual std::string toString() const = 0;
 };
 

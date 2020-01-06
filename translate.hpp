@@ -1,30 +1,25 @@
 #ifndef TRANSLATE_HPP
 #define TRANSLATE_HPP
 
-#include <functional>
 #include <list>
 #include <ostream>
-#include <typeindex>
-#include <typeinfo>
 #include "tac.hpp"
-
-#define ENABLE_HOOK_MACRO
-#include "ast_walker.hpp"
+#include "ast_visitor.hpp"
 
 
 namespace gen {
 
-class TacGenerator final: public AST::Walker {
+class TacGenerator final: public AST::Visitor {
 private:
     std::list<Tac*> codes;
 public:
-    TacGenerator();
     ~TacGenerator();
     const std::list<Tac*>& getTac() const;
     void printTac(std::ostream& out) const;
+
+    void leave(AST::FunDef *, AST::Node *) override;
 };
 
-}
-
+} // namespace gen
 
 #endif // TRANSLATE_HPP

@@ -6,7 +6,7 @@ LEX=flex
 
 BISONFLAGS=-t -d -v
 CXXFLAGS=-std=c++17 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
-LDFLAGS=-static -lfl -ly -Wl,--gc-sections
+LDFLAGS=-lfl -ly -Wl,--gc-sections
 
 # installation
 splc: install # CS323 project requirement adaptation
@@ -38,13 +38,13 @@ libsemantic.a: ast.o type.o semantic.o
 	$(AR) rcs $@ $^
 type.o: type.cpp type.hpp utils.hpp
 	$(CXX) $(CXXFLAGS) -c $<
-semantic.o: semantic.cpp semantic.hpp
+semantic.o: semantic.cpp semantic.hpp ast_visitor.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # intermediate-code generation
 libgentac.a: translate.o
 	$(AR) rcs $@ $^
-translate.o: translate.cpp translate.hpp tac.hpp
+translate.o: translate.cpp translate.hpp tac.hpp ast_visitor.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:

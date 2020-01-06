@@ -1,7 +1,7 @@
 #ifndef AST_HPP
 #define AST_HPP
 
-#include <functional>
+#include <initializer_list>
 #include <list>
 #include <memory>
 #include <string>
@@ -18,22 +18,44 @@ struct YYLTYPE;
 
 namespace AST {
 
-class Walker;
+#define FOR_EACH_NODE(action)   \
+    action(Node)                \
+    action(Program)             \
+    action(VarDec)              \
+    action(ArrDec)              \
+    action(Dec)                 \
+    action(Def)                 \
+    action(ParamDec)            \
+    action(FunDec)              \
+    action(Specifier)           \
+    action(PrimitiveSpecifier)  \
+    action(StructSpecifier)     \
+    action(ExtDef)              \
+    action(ExtVarDef)           \
+    action(StructDef)           \
+    action(FunDef)              \
+    action(Exp)                 \
+    action(LiteralExp)          \
+    action(IdExp)               \
+    action(ArrayExp)            \
+    action(MemberExp)           \
+    action(UnaryExp)            \
+    action(BinaryExp)           \
+    action(AssignExp)           \
+    action(CallExp)             \
+    action(Stmt)                \
+    action(ExpStmt)             \
+    action(ReturnStmt)          \
+    action(IfStmt)              \
+    action(WhileStmt)           \
+    action(ForStmt)             \
+    action(CompoundStmt)
 
-struct Node;
-struct Program;
-struct ExtDef;
-struct ExtDec;
-struct Specifier;
-struct StructSpecifier;
-struct VarDec;
-struct FunDec;
-struct ParamDec;
-struct Stmt;
-struct CompoundStmt;
-struct Def;
-struct Dec;
-struct Exp;
+
+class Visitor;
+
+#define DECLARE_STRUCT(T) struct T;
+FOR_EACH_NODE(DECLARE_STRUCT)
 
 struct Location {
     struct Position {
@@ -46,29 +68,50 @@ struct Location {
     }
 };
 
+#define DEFINE_VISITOR_HOOKS                                                        \
+    virtual void visit(Visitor *visitor);                                           \
+    virtual void traverse(std::initializer_list<Visitor*> visitors, Node *parent);
+
 struct Node {
     unsigned nodeId;
     Location loc;
     std::shared_ptr<smt::SymbolTable> scope;
     Node();
-    virtual ~Node() {}
-    virtual void traverse(const std::vector<Walker*>& walkers, Node * parent);
+    virtual ~Node() = default;
     void setLocation(const YYLTYPE * loc);
+
+    DEFINE_VISITOR_HOOKS
 };
 
 
-// misc
+struct Program final: public Node {
+    std::vector<ExtDef*> extDefs;
+
+    Program(const std::list<ExtDef*>& extDefList);
+    ~Program();
+    void traverse(std::initializer_list<Visitor*> visitors);
+
+    DEFINE_VISITOR_HOOKS
+};
+
+
+// declaration/definition
 
 struct VarDec: public Node {
     std::string identifier;
 
     VarDec(const std::string& identifier): identifier(identifier) {}
+    virtual ~VarDec() = default;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ArrDec final: public VarDec {
     std::vector<int> dimensions;
 
     ArrDec(const VarDec& declarator, int dim);
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct Dec final: public Node {
@@ -77,7 +120,8 @@ struct Dec final: public Node {
 
     Dec(VarDec * declarator, Exp * init = nullptr);
     ~Dec();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct Def: public Node {
@@ -86,8 +130,9 @@ struct Def: public Node {
 
     Def(Specifier * specifier, const std::list<Dec*>& decList);
     ~Def();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate();
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ParamDec: public Node {
@@ -96,7 +141,8 @@ struct ParamDec: public Node {
 
     ParamDec(Specifier * specifier, VarDec * declarator);
     ~ParamDec();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct FunDec: public Node {
@@ -105,17 +151,22 @@ struct FunDec: public Node {
 
     FunDec(const std::string& identifier, const std::list<ParamDec*>& varList = {});
     ~FunDec();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct Specifier: public Node {
     Shared<smt::Type> type;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct PrimitiveSpecifier final: public Specifier {
     smt::Primitive primitive;
 
     PrimitiveSpecifier(const std::string& typeName);
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct StructSpecifier final: public Specifier {
@@ -124,47 +175,44 @@ struct StructSpecifier final: public Specifier {
 
     StructSpecifier(const std::string& identifier, const std::list<Def*>& defList = {});
     ~StructSpecifier();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
-struct ExtDef: public Node {};
+struct ExtDef: public Node {
+    DEFINE_VISITOR_HOOKS
+};
 
 struct ExtVarDef final: public ExtDef {
     Specifier * specifier;
     std::vector<VarDec*> varDecs;
 
-    ExtVarDef(Specifier * specifier, const std::list<VarDec*>& extDecList);
+    ExtVarDef(Specifier *specifier, const std::list<VarDec*>& extDecList);
     ~ExtVarDef();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct StructDef final: public ExtDef {
-    StructSpecifier * specifier;
+    StructSpecifier *specifier;
 
-    StructDef(Specifier * specifier);
+    StructDef(Specifier *specifier);
     ~StructDef();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct FunDef final: public ExtDef {
-    Specifier * specifier;
-    FunDec * declarator;
-    CompoundStmt * body;
+    Specifier *specifier;
+    FunDec *declarator;
+    CompoundStmt *body;
 
-    FunDef(Specifier * specifier, FunDec * declarator, CompoundStmt * body);
+    FunDef(Specifier *specifier, FunDec *declarator, CompoundStmt *body);
     ~FunDef();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate();
+
+    DEFINE_VISITOR_HOOKS
 };
-
-struct Program final: public Node {
-    std::vector<ExtDef*> extDefs;
-
-    Program(const std::list<ExtDef*>& extDefList);
-    ~Program();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
-};
-
 
 // ------------------------ expressions ------------------------------
 
@@ -173,8 +221,10 @@ struct Exp: public Node {
 
     Exp() {}
     Exp(Shared<smt::Type> type): type(type) {}
-    virtual ~Exp() {}
+    virtual ~Exp() = default;
     virtual std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) = 0;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 
@@ -189,6 +239,8 @@ struct LiteralExp final: public Exp {
     LiteralExp(int);
     LiteralExp(double);
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 
@@ -197,6 +249,8 @@ struct IdExp final: public Exp {
 
     IdExp(const std::string&);
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ArrayExp: public Exp {
@@ -204,10 +258,11 @@ struct ArrayExp: public Exp {
 
     ArrayExp(Exp * subject, Exp * index);
     ~ArrayExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
         throw std::runtime_error("not implemented");
     }
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct MemberExp: public Exp {
@@ -216,10 +271,11 @@ struct MemberExp: public Exp {
 
     MemberExp(Exp * subject, const std::string& member);
     ~MemberExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
         throw std::runtime_error("not implemented");
     }
+
+    DEFINE_VISITOR_HOOKS
 };
 
 enum Operator {
@@ -240,31 +296,34 @@ enum Operator {
 
 struct UnaryExp: public Exp {
     Operator opt;
-    Exp * argument;
+    Exp *argument;
 
-    UnaryExp(Operator opt, Exp * argument);
+    UnaryExp(Operator opt, Exp *argument);
     ~UnaryExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct BinaryExp: public Exp {
     Operator opt;
-    Exp * left, * right;
+    Exp *left, *right;
 
-    BinaryExp(Exp * left, Operator opt, Exp * right);
+    BinaryExp(Exp *left, Operator opt, Exp *right);
     ~BinaryExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct AssignExp: public Exp {
-    Exp * left, * right;
+    Exp *left, *right;
 
-    AssignExp(Exp * left, Exp * right);
+    AssignExp(Exp *left, Exp *right);
     ~AssignExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct CallExp: public Exp {
@@ -273,8 +332,9 @@ struct CallExp: public Exp {
 
     CallExp(const std::string& identifier, const std::list<Exp*>& arguments = {});
     ~CallExp();
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 
@@ -282,55 +342,62 @@ struct CallExp: public Exp {
 
 struct Stmt: public Node {
     virtual std::list<gen::Tac*> translate() = 0;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ExpStmt final: public Stmt {
-    Exp * expression;
+    Exp *expression;
 
-    ExpStmt(Exp * expression);
+    ExpStmt(Exp *expression);
     ~ExpStmt() {
         delete expression;
     }
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ReturnStmt final: public Stmt {
-    Exp * argument;
+    Exp *argument;
 
-    ReturnStmt(Exp * argument = nullptr): argument(argument) {}
+    ReturnStmt(Exp *argument = nullptr): argument(argument) {}
     ~ReturnStmt() {
         delete argument;
     }
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct IfStmt final: public Stmt {
-    Exp * test;
-    Stmt * consequent, * alternate;
+    Exp *test;
+    Stmt *consequent, *alternate;
 
-    IfStmt(Exp * test, Stmt * consequent, Stmt * alternate = nullptr);
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    IfStmt(Exp *test, Stmt *consequent, Stmt *alternate = nullptr);
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct WhileStmt final: public Stmt {
-    Exp * test;
-    Stmt * body;
+    Exp *test;
+    Stmt *body;
 
-    WhileStmt(Exp * test, Stmt * body);
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    WhileStmt(Exp *test, Stmt *body);
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct ForStmt final: public Stmt {
-    Exp * init, * test, * update;
-    Stmt * body;
+    Exp *init, *test, *update;
+    Stmt *body;
 
-    ForStmt(Exp * init, Exp * test, Exp * update, Stmt * body);
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
+    ForStmt(Exp *init, Exp *test, Exp *update, Stmt *body);
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 struct CompoundStmt final: public Stmt {
@@ -344,8 +411,9 @@ struct CompoundStmt final: public Stmt {
         for (auto def: definitions) delete def;
         for (auto stmt: body) delete stmt;
     }
-    void traverse(const std::vector<Walker*>& walkers, Node * parent) override;
     std::list<gen::Tac*> translate() override;
+
+    DEFINE_VISITOR_HOOKS
 };
 
 } // namespace AST

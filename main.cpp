@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+// #include "ast_dump.hpp"
 #include "parser.hpp"
 #include "semantic.hpp"
 #include "translate.hpp"
@@ -48,14 +49,18 @@ int main(int argc, const char ** argv) {
     fclose(srcFile);
     if (!ast) exit(PARSING_ERR);
 
+    // // dump AST
+    // auto printer = make_unique<AST::Printer>(cout);
+    // ast->traverse({ printer.get() });
+
     // semantic analysis
     vector<smt::SemanticErrRecord> semanticErrs;
     auto scopeSetter = make_unique<smt::ScopeSetter>();
     auto structInit = make_unique<smt::StructInitializer>(semanticErrs); 
     auto symbolSetter = make_unique<smt::SymbolSetter>(semanticErrs);
     auto typeSynthesizer = make_unique<smt::TypeSynthesizer>(semanticErrs);
-    ast->traverse({ scopeSetter.get(), structInit.get() }, nullptr);
-    ast->traverse({ symbolSetter.get(), typeSynthesizer.get() }, nullptr);
+    ast->traverse({ scopeSetter.get(), structInit.get() });
+    ast->traverse({ symbolSetter.get(), typeSynthesizer.get() });
     if (semanticErrs.size() > 0) {
         for (auto& err: semanticErrs) {
             cerr << "Error type " << err.err - smt::ERR_TYPE0 << " at Line " << err.cause->loc.end.line << ": " << err.msg << endl;
@@ -65,7 +70,7 @@ int main(int argc, const char ** argv) {
 
     // intermediate code generation
     auto tacGenerator = make_unique<gen::TacGenerator>();
-    ast->traverse({ tacGenerator.get() }, nullptr);
+    ast->traverse({ tacGenerator.get() });
     ofstream fout(targetPath);
     tacGenerator->printTac(fout);
 
