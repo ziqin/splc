@@ -5,6 +5,10 @@
 
 namespace AST {
 
+/**
+ * visit: active traversal
+ * enter/leave: passive traversal
+ */
 class Visitor {
 public:
     virtual ~Visitor() = default;

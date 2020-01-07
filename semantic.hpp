@@ -39,7 +39,6 @@ enum SemanticErr {
     ERR_TYPE15
 };
 
-
 struct SemanticErrRecord {
     SemanticErr err;
     AST::Node *cause;
@@ -48,6 +47,8 @@ struct SemanticErrRecord {
     SemanticErrRecord(SemanticErr err, AST::Node *cause, std::string msg):
         err(err), cause(cause), msg(msg) {}
 };
+
+std::vector<SemanticErrRecord> analyzeSemantic(AST::Program *ast);
 
 
 class SemanticAnalyzer: public AST::Visitor {

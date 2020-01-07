@@ -5,7 +5,7 @@ LEX=flex
 
 
 BISONFLAGS=-t -d -v
-CXXFLAGS=-std=c++17 -Wall -Wno-unused-function -ffunction-sections -fdata-sections
+CXXFLAGS=-std=c++17 -Wall -Wno-unused-function
 LDFLAGS=-lfl -ly -Wl,--gc-sections
 
 # installation

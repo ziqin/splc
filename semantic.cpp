@@ -7,6 +7,24 @@ using namespace smt;
 using namespace std;
 
 
+// TODO: refactor type resolution for structure and array
+// Consider Future pattern
+
+vector<SemanticErrRecord> smt::analyzeSemantic(Program *ast) {
+    vector<SemanticErrRecord> semanticErrs;
+    auto scopeSetter = make_unique<ScopeSetter>();
+    auto structInit = make_unique<StructInitializer>(semanticErrs); 
+    auto symbolSetter = make_unique<SymbolSetter>(semanticErrs);
+    auto typeSynthesizer = make_unique<TypeSynthesizer>(semanticErrs);
+
+    // order matters!
+    ast->traverse({ scopeSetter.get(), structInit.get() });
+    ast->traverse({ symbolSetter.get(), typeSynthesizer.get() });
+
+    return semanticErrs;
+}
+
+
 void ScopeSetter::defaultEnter(Node *self, Node *parent) {
     if (self->scope == nullptr) { // scope has not been specified by its parent
         self->scope = parent->scope;
@@ -66,15 +84,15 @@ void StructInitializer::leave(StructDef *self, Node *parent) {
         Shared<Type> type = this->structures[self->specifier->identifier];
         auto structType = new StructType;
         for (Def *def: self->specifier->definitions) {
-            Shared<Type> fieldType = def->specifier->type;
+            // Shared<Type> fieldType = def->specifier->type;
             for (Dec *dec: def->declarations) {
-                auto arrField = dynamic_cast<const ArrDec*>(dec->declarator);
+                Shared<Type> fieldType = def->specifier->type;
+                auto arrField = dynamic_cast<const ArrDec*>(dec->declarator);  // deduplicate
                 if (arrField != nullptr) {
                     for (auto dim = arrField->dimensions.rbegin(); dim != arrField->dimensions.rend(); ++dim) {
                         fieldType = makeType<ArrayType>(fieldType, *dim);
                     }
                 }
-                structType->fields.push_back(make_pair(fieldType, dec->declarator->identifier));
                 structType->fields.push_back(make_pair(fieldType, dec->declarator->identifier));
             }
         }
@@ -119,7 +137,14 @@ void SymbolSetter::enter(FunDec *self, Node *parent) {
     if (self->scope->canOverwrite(self->identifier)) {
         FunctionType *type = new FunctionType(this->typeRefs[self->nodeId]);
         for (ParamDec *para: self->parameters) {
-            type->parameters.push_back(para->specifier->type);
+            Shared<Type> paraType = para->specifier->type;
+            auto arrPara = dynamic_cast<const ArrDec*>(para->declarator);
+            if (arrPara != nullptr) {   // TODO: deduplicate
+                for (auto dim = arrPara->dimensions.rbegin(); dim != arrPara->dimensions.rend(); ++dim) {
+                    paraType = makeType<ArrayType>(paraType, *dim);
+                }
+            }
+            type->parameters.push_back(paraType);
         }
         self->scope->setType(self->identifier, Shared<Type>(type));
     } else {
@@ -264,7 +289,7 @@ void TypeSynthesizer::leave(MemberExp *self, Node *parent) {
             self->type = fieldType;
         }
     } catch (const exception& e) {
-        this->report(ERR_TYPE13, self, "accessing member of non-structure variable `" + self->member + "'");
+        this->report(ERR_TYPE13, self, "accessing member of non-structure variable");
     }
 }
 

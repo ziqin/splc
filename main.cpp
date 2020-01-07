@@ -54,13 +54,7 @@ int main(int argc, const char ** argv) {
     // ast->traverse({ printer.get() });
 
     // semantic analysis
-    vector<smt::SemanticErrRecord> semanticErrs;
-    auto scopeSetter = make_unique<smt::ScopeSetter>();
-    auto structInit = make_unique<smt::StructInitializer>(semanticErrs); 
-    auto symbolSetter = make_unique<smt::SymbolSetter>(semanticErrs);
-    auto typeSynthesizer = make_unique<smt::TypeSynthesizer>(semanticErrs);
-    ast->traverse({ scopeSetter.get(), structInit.get() });
-    ast->traverse({ symbolSetter.get(), typeSynthesizer.get() });
+    auto semanticErrs = smt::analyzeSemantic(ast.get());
     if (semanticErrs.size() > 0) {
         for (auto& err: semanticErrs) {
             cerr << "Error type " << err.err - smt::ERR_TYPE0 << " at Line " << err.cause->loc.end.line << ": " << err.msg << endl;

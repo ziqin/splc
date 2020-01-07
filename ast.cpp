@@ -687,6 +687,7 @@ list<Tac*> AssignExp::translate(shared_ptr<TacOperand> place) {
     if (lvalue == nullptr) {
         throw runtime_error("assignment to non-IdExp has not been implemented");
     }
+    // TODO: support assignment of non-integer values
     auto variable = makeTacOp<VariableOperand>(scope->getId(lvalue->identifier));
     auto tp = makeTacOp<VariableOperand>(scope->createPlace());
     auto code = right->translate(tp);
