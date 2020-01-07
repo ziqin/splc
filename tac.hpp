@@ -1,6 +1,7 @@
 #ifndef TAC_HPP
 #define TAC_HPP
 
+#include <ostream>
 #include <string>
 #include <memory>
 
@@ -277,7 +278,11 @@ inline std::shared_ptr<TacOperand> makeTacOp(Args... args) {
     return std::shared_ptr<TacOperand>(new T(args...));
 }
 
-
 } // namespace ir
+
+
+inline std::ostream& operator<<(std::ostream& out, const ir::Tac& tac) {
+    return out << tac.toString();
+}
 
 #endif // TAC_HPP

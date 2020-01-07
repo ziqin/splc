@@ -63,10 +63,12 @@ int main(int argc, const char ** argv) {
     }
 
     // intermediate code generation
-    auto tacGenerator = make_unique<ir::TacGenerator>();
-    ast->traverse({ tacGenerator.get() });
+    auto tacGenerator = make_unique<ir::TacGenerator>(ast.get());
     ofstream fout(targetPath);
-    tacGenerator->printTac(fout);
+    for (auto tacPtr: tacGenerator->getTac()) {
+        fout << *tacPtr << std::endl;
+    }
+    fout.close();
 
     return 0;
 }

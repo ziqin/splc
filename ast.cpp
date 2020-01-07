@@ -149,19 +149,6 @@ void Def::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> Def::translate() {
-    list<Tac*> code;
-    for (auto dec: declarations) {
-        if (dec->init != nullptr) {
-            auto variable = makeTacOp<VariableOperand>(scope->getId(dec->declarator->identifier));
-            auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-            code.splice(code.end(), dec->init->translate(tp));
-            code.push_back(new AssignTac(variable, tp));
-        }
-    }
-    return code;
-}
-
 
 ParamDec::ParamDec(Specifier * specifier, VarDec * declarator):
     specifier(specifier), declarator(declarator)
@@ -353,90 +340,8 @@ void FunDef::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-// TODO: handle non-integer arguments
-list<Tac*> FunDef::translate() {
-    list<Tac*> code { new FuncTac(declarator->identifier) };
-    for (auto param: declarator->parameters) {
-        auto place = makeTacOp<VariableOperand>(param->scope->getId(param->declarator->identifier));
-        code.push_back(new ParamTac(place));
-    }
-    code.splice(code.end(), body->translate());
-    return code;
-}
-
 
 // ----------------------- expressions ---------------------------
-
-list<Tac*> translateCondExp(const Exp *exp, LabelTac *labelTrue, LabelTac *labelFalse) {
-    if (typeid(*exp) == typeid(UnaryExp)) {
-        return translateCondExp(exp, labelFalse, labelTrue);
-    } else {
-        const BinaryExp *binExp = dynamic_cast<const BinaryExp*>(exp);
-        if (binExp == nullptr) {
-            throw invalid_argument("invalid expression"); // FIXME: memory leak
-        }
-        list<Tac*> code;
-        switch (binExp->opt) {
-        case OPT_AND: {
-            auto label1 = new LabelTac(exp->scope->createLabel());
-            code.splice(code.end(), translateCondExp(binExp->left, label1, labelFalse));
-            code.push_back(label1);
-            code.splice(code.end(), translateCondExp(binExp->right, labelTrue, labelFalse));
-        } break;
-        case OPT_OR: {
-            auto label1 = new LabelTac(exp->scope->createLabel());
-            code.splice(code.end(), translateCondExp(binExp->left, labelTrue, label1));
-            code.push_back(label1);
-            code.splice(code.end(), translateCondExp(binExp->right, labelTrue, labelFalse));
-        } break;
-        default: {
-            auto t1 = makeTacOp<VariableOperand>(exp->scope->createPlace());
-            auto t2 = makeTacOp<VariableOperand>(exp->scope->createPlace());
-            code.splice(code.end(), binExp->left->translate(t1));
-            code.splice(code.end(), binExp->right->translate(t2));
-            IfGotoTac *ifGotoTac;
-            switch (binExp->opt) {
-            case OPT_LT:
-                ifGotoTac = new IfLtGotoTac(t1, t2, labelTrue->no);
-                break;
-            case OPT_LE:
-                ifGotoTac = new IfLeGotoTac(t1, t2, labelTrue->no);
-                break;
-            case OPT_GT:
-                ifGotoTac = new IfGtGotoTac(t1, t2, labelTrue->no);
-                break;
-            case OPT_GE:
-                ifGotoTac = new IfGeGotoTac(t1, t2, labelTrue->no);
-                break;
-            case OPT_NE:
-                ifGotoTac = new IfNeGotoTac(t1, t2, labelTrue->no);
-                break;
-            case OPT_EQ:
-                ifGotoTac = new IfEqGotoTac(t1, t2, labelTrue->no);
-                break;
-            default:
-                for (auto tac: code) delete tac;
-                throw runtime_error("invalid binary expression");
-            }
-            code.push_back(ifGotoTac);
-            code.push_back(new GotoTac(labelFalse->no));
-        } break;
-        }
-        return code;
-    }
-}
-
-list<Tac*> translateCondExp(const Exp *exp, std::shared_ptr<TacOperand> place) {
-    auto label1 = new LabelTac(exp->scope->createLabel());
-    auto label2 = new LabelTac(exp->scope->createLabel());
-    list<Tac*> code { new AssignTac(place, makeTacOp<ConstantOperand<int>>(0)) };
-    code.splice(code.end(), move(translateCondExp(exp, label1, label2)));
-    code.push_back(label1);
-    code.push_back(new AssignTac(place, makeTacOp<ConstantOperand<int>>(1)));
-    code.push_back(label2);
-    return code;
-}
-
 
 void Exp::visit(Visitor *visitor) {
     visitor->visit(this);
@@ -469,24 +374,6 @@ void LiteralExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> LiteralExp::translate(shared_ptr<TacOperand> place) {
-    shared_ptr<TacOperand> value;
-    switch (smt::as<smt::PrimitiveType>(type).primitive) {
-    case smt::TYPE_INT:
-        value = makeTacOp<ConstantOperand<int>>(intVal);
-        break;
-    case smt::TYPE_CHAR:
-        value = makeTacOp<ConstantOperand<char>>(charVal);
-        break;
-    case smt::TYPE_FLOAT:
-        value = makeTacOp<ConstantOperand<float>>(floatVal);
-        break;
-    default:
-        throw invalid_argument("invalid type");
-    }
-    return { new AssignTac(place, value) };
-}
-
 
 IdExp::IdExp(const string& identifier): identifier(identifier) {
     auto itr = identifier.begin();
@@ -504,11 +391,6 @@ void IdExp::visit(Visitor *visitor) {
 void IdExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execEnter(visitors, this, parent);
     execLeave(visitors, this, parent);
-}
-
-list<Tac*> IdExp::translate(shared_ptr<TacOperand> place) {
-    auto variable = makeTacOp<VariableOperand>(scope->getId(identifier));
-    return { new AssignTac(place, variable) };
 }
 
 
@@ -579,23 +461,6 @@ void UnaryExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> UnaryExp::translate(shared_ptr<TacOperand> place) {
-    if (opt == OPT_NOT) {
-        return translateCondExp(this, place);
-    } else {
-        auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-        auto code = argument->translate(tp);
-        if (opt == OPT_MINUS) {
-            code.push_back(new SubTac(place, makeTacOp<ConstantOperand<int>>(0), tp));
-        } else if (opt == OPT_PLUS) {
-            code.push_back(new AssignTac(place, tp));
-        } else {
-            throw runtime_error("invalid unary operator encountered");
-        }
-        return code;
-    }
-}
-
 
 BinaryExp::BinaryExp(Exp * left, Operator opt, Exp * right):
     opt(opt), left(left), right(right)
@@ -621,44 +486,6 @@ void BinaryExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> BinaryExp::translate(shared_ptr<TacOperand> place) {
-    list<Tac*> code;
-    if (opt == OPT_AND || opt == OPT_OR ||
-        opt == OPT_LT || opt == OPT_LE ||
-        opt == OPT_GT || opt == OPT_GE ||
-        opt == OPT_NE || opt == OPT_EQ
-    ) {
-        return translateCondExp(this, place);
-    } else {
-        auto t1 = makeTacOp<VariableOperand>(scope->createPlace());
-        auto t2 = makeTacOp<VariableOperand>(scope->createPlace());
-        auto code1 = left->translate(t1);
-        auto code2 = right->translate(t2);
-        ArithTac *code3;
-        switch (opt) {
-        case OPT_PLUS:
-            code3 = new AddTac(place, t1, t2);
-            break;
-        case OPT_MINUS:
-            code3 = new SubTac(place, t1, t2);
-            break;
-        case OPT_MUL:
-            code3 = new MulTac(place, t1, t2);
-            break;
-        case OPT_DIV:
-            code3 = new DivTac(place, t1, t2);
-            break;
-        default:
-            for (auto tac: code1) delete tac;
-            for (auto tac: code2) delete tac;
-            throw runtime_error("Invalid binary operator");
-        }
-        code1.splice(code1.end(), code2);
-        code1.push_back(code3);
-        return code1;
-    }
-}
-
 
 AssignExp::AssignExp(Exp * left, Exp * right): left(left), right(right) {
     if (hasNull(left, right)) {
@@ -680,20 +507,6 @@ void AssignExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     left->traverse(visitors, this);
     right->traverse(visitors, this);
     execLeave(visitors, this, parent);
-}
-
-list<Tac*> AssignExp::translate(shared_ptr<TacOperand> place) {
-    auto lvalue = dynamic_cast<const IdExp*>(left);
-    if (lvalue == nullptr) {
-        throw runtime_error("assignment to non-IdExp has not been implemented");
-    }
-    // TODO: support assignment of non-integer values
-    auto variable = makeTacOp<VariableOperand>(scope->getId(lvalue->identifier));
-    auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-    auto code = right->translate(tp);
-    code.push_back(new AssignTac(variable, tp));
-    code.push_back(new AssignTac(place, variable));
-    return code;
 }
 
 
@@ -718,32 +531,6 @@ void CallExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execEnter(visitors, this, parent);
     for (auto arg: arguments) arg->traverse(visitors, this);
     execLeave(visitors, this, parent);
-}
-
-// TODO: enforce argument number for built-in I/O functions during semantic analysis
-list<Tac*> CallExp::translate(shared_ptr<TacOperand> place) {
-    list<Tac*> code;
-    if (identifier == "read") {
-        code.push_back(new ReadTac(place));
-    } else if (identifier == "write") {
-        auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-        code.splice(code.end(), arguments[0]->translate(tp));
-        code.push_back(new WriteTac(tp));
-    } else {
-        vector<shared_ptr<TacOperand>> argPlaces;
-        // left-to-right evaluation
-        for (auto arg: arguments) {
-            auto argPlace = makeTacOp<VariableOperand>(scope->createPlace());
-            code.splice(code.end(), arg->translate(argPlace));
-            argPlaces.push_back(argPlace);
-        }
-        // push args into stack from right to left
-        for (auto argPlace = argPlaces.rbegin(); argPlace != argPlaces.rend(); ++argPlace) {
-            code.push_back(new ArgTac(*argPlace));
-        }
-        code.push_back(new CallTac(place, identifier));
-    }
-    return code;
 }
 
 
@@ -773,11 +560,6 @@ void ExpStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> ExpStmt::translate() {
-    auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-    return expression->translate(tp);
-}
-
 
 void ReturnStmt::visit(Visitor *visitor) {
     visitor->visit(this);
@@ -787,13 +569,6 @@ void ReturnStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execEnter(visitors, this, parent);
     if (argument) argument->traverse(visitors, this);
     execLeave(visitors, this, parent);
-}
-
-list<Tac*> ReturnStmt::translate() {
-    auto tp = makeTacOp<VariableOperand>(scope->createPlace());
-    auto code = argument->translate(tp);
-    code.push_back(new ReturnTac(tp));
-    return code;
 }
 
 
@@ -818,25 +593,6 @@ void IfStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> IfStmt::translate() {
-    LabelTac *label1, *label2, *label3;
-    label1 = new LabelTac(scope->createLabel());
-    label2 = new LabelTac(scope->createLabel());
-    list<Tac*> code = translateCondExp(test, label1, label2);
-    code.push_back(label1);
-    code.splice(code.end(), consequent->translate());
-    if (alternate != nullptr) {
-        label3 = new LabelTac(scope->createLabel());
-        code.push_back(new GotoTac(label3->no));
-    }
-    code.push_back(label2);
-    if (alternate != nullptr) {
-        code.splice(code.end(), alternate->translate());
-        code.push_back(label3);
-    }
-    return code;
-}
-
 
 WhileStmt::WhileStmt(Exp * test, Stmt * body): test(test), body(body) {
     if (hasNull(test, body)) {
@@ -854,19 +610,6 @@ void WhileStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     test->traverse(visitors, this);
     body->traverse(visitors, this);
     execLeave(visitors, this, parent);
-}
-
-list<Tac*> WhileStmt::translate() {
-    auto label1 = new LabelTac(scope->createLabel());
-    auto label2 = new LabelTac(scope->createLabel());
-    auto label3 = new LabelTac(scope->createLabel());
-    list<Tac*> code { label1 };
-    code.splice(code.end(), translateCondExp(test, label2, label3));
-    code.push_back(label2);
-    code.splice(code.end(), body->translate());
-    code.push_back(new GotoTac(label1->no));
-    code.push_back(label3);
-    return code;
 }
 
 
@@ -892,11 +635,6 @@ void ForStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     execLeave(visitors, this, parent);
 }
 
-list<Tac*> ForStmt::translate() {
-    // TODO
-    throw runtime_error("not implemented");
-}
-
 
 void CompoundStmt::visit(Visitor *visitor) {
     visitor->visit(this);
@@ -907,15 +645,4 @@ void CompoundStmt::traverse(initializer_list<Visitor*> visitors, Node *parent) {
     for (auto def: definitions) def->traverse(visitors, this);
     for (auto stmt: body) stmt->traverse(visitors, this);
     execLeave(visitors, this, parent);
-}
-
-list<Tac*> CompoundStmt::translate() {
-    list<Tac*> code;
-    for (auto def: definitions) {
-        code.splice(code.end(), def->translate());
-    }
-    for (auto stmt: body) {
-        code.splice(code.end(), stmt->translate());
-    }
-    return code;
 }
