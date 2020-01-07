@@ -6,7 +6,7 @@
 #include <string>
 #include "ast.hpp"
 #include "utils.hpp"
-#include "syntax_errs.hpp"
+#include "syntax_err.hpp"
 
 extern "C" int yylex(void);
 static void yyerror(const char *);

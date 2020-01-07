@@ -26,7 +26,7 @@ ast.o: ast.cpp ast.hpp utils.hpp tac.hpp type.hpp syntax.tab.h
 	$(CXX) $(CXXFLAGS) -c $<
 lex.yy.o: lex.yy.c syntax.tab.h ast.hpp
 	$(CXX) $(CXXFLAGS) -c $<
-syntax.tab.o: syntax.tab.c syntax.tab.h ast.hpp syntax_errs.hpp
+syntax.tab.o: syntax.tab.c syntax.tab.h ast.hpp syntax_err.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 lex.yy.c: lex.l
 	$(LEX) $^

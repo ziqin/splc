@@ -1,5 +1,5 @@
-#ifndef SYNTAX_ERRS_HPP
-#define SYNTAX_ERRS_HPP
+#ifndef SYNTAX_ERR_HPP
+#define SYNTAX_ERR_HPP
 
 enum SyntaxErr {
     SYNTAX_ERR_MISSING_SEMI,
@@ -20,4 +20,4 @@ const char * syntaxErrMsgs[] = {
     "Statement precede declaration",
 };
 
-#endif // SYNTAX_ERRS_HPP
+#endif // SYNTAX_ERR_HPP
