@@ -1,5 +1,5 @@
-#ifndef TRANSLATE_HPP
-#define TRANSLATE_HPP
+#ifndef GEN_TAC_HPP
+#define GEN_TAC_HPP
 
 #include <list>
 #include <ostream>
@@ -7,7 +7,7 @@
 #include "ast_visitor.hpp"
 
 
-namespace gen {
+namespace ir {
 
 class TacGenerator final: public AST::Visitor {
 private:
@@ -20,6 +20,6 @@ public:
     void leave(AST::FunDef *, AST::Node *) override;
 };
 
-} // namespace gen
+} // namespace ir
 
-#endif // TRANSLATE_HPP
+#endif // GEN_TAC_HPP

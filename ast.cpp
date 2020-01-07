@@ -8,7 +8,7 @@
 
 using namespace AST;
 using namespace std;
-using namespace gen;
+using namespace ir;
 
 
 template <typename T>

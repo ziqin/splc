@@ -130,7 +130,7 @@ struct Def: public Node {
 
     Def(Specifier * specifier, const std::list<Dec*>& decList);
     ~Def();
-    std::list<gen::Tac*> translate();
+    std::list<ir::Tac*> translate();
 
     DEFINE_VISITOR_HOOKS
 };
@@ -209,7 +209,7 @@ struct FunDef final: public ExtDef {
 
     FunDef(Specifier *specifier, FunDec *declarator, CompoundStmt *body);
     ~FunDef();
-    std::list<gen::Tac*> translate();
+    std::list<ir::Tac*> translate();
 
     DEFINE_VISITOR_HOOKS
 };
@@ -222,7 +222,7 @@ struct Exp: public Node {
     Exp() {}
     Exp(Shared<smt::Type> type): type(type) {}
     virtual ~Exp() = default;
-    virtual std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) = 0;
+    virtual std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) = 0;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -238,7 +238,7 @@ struct LiteralExp final: public Exp {
     LiteralExp(char);
     LiteralExp(int);
     LiteralExp(double);
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -248,7 +248,7 @@ struct IdExp final: public Exp {
     std::string identifier;
 
     IdExp(const std::string&);
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -258,7 +258,7 @@ struct ArrayExp: public Exp {
 
     ArrayExp(Exp * subject, Exp * index);
     ~ArrayExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override {
         throw std::runtime_error("not implemented");
     }
 
@@ -271,7 +271,7 @@ struct MemberExp: public Exp {
 
     MemberExp(Exp * subject, const std::string& member);
     ~MemberExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override {
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override {
         throw std::runtime_error("not implemented");
     }
 
@@ -300,7 +300,7 @@ struct UnaryExp: public Exp {
 
     UnaryExp(Operator opt, Exp *argument);
     ~UnaryExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -311,7 +311,7 @@ struct BinaryExp: public Exp {
 
     BinaryExp(Exp *left, Operator opt, Exp *right);
     ~BinaryExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -321,7 +321,7 @@ struct AssignExp: public Exp {
 
     AssignExp(Exp *left, Exp *right);
     ~AssignExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -332,7 +332,7 @@ struct CallExp: public Exp {
 
     CallExp(const std::string& identifier, const std::list<Exp*>& arguments = {});
     ~CallExp();
-    std::list<gen::Tac*> translate(std::shared_ptr<gen::TacOperand> place) override;
+    std::list<ir::Tac*> translate(std::shared_ptr<ir::TacOperand> place) override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -341,7 +341,7 @@ struct CallExp: public Exp {
 // ------------------------------ statements -------------------------------------
 
 struct Stmt: public Node {
-    virtual std::list<gen::Tac*> translate() = 0;
+    virtual std::list<ir::Tac*> translate() = 0;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -353,7 +353,7 @@ struct ExpStmt final: public Stmt {
     ~ExpStmt() {
         delete expression;
     }
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -365,7 +365,7 @@ struct ReturnStmt final: public Stmt {
     ~ReturnStmt() {
         delete argument;
     }
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -375,7 +375,7 @@ struct IfStmt final: public Stmt {
     Stmt *consequent, *alternate;
 
     IfStmt(Exp *test, Stmt *consequent, Stmt *alternate = nullptr);
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -385,7 +385,7 @@ struct WhileStmt final: public Stmt {
     Stmt *body;
 
     WhileStmt(Exp *test, Stmt *body);
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -395,7 +395,7 @@ struct ForStmt final: public Stmt {
     Stmt *body;
 
     ForStmt(Exp *init, Exp *test, Exp *update, Stmt *body);
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -411,7 +411,7 @@ struct CompoundStmt final: public Stmt {
         for (auto def: definitions) delete def;
         for (auto stmt: body) delete stmt;
     }
-    std::list<gen::Tac*> translate() override;
+    std::list<ir::Tac*> translate() override;
 
     DEFINE_VISITOR_HOOKS
 };

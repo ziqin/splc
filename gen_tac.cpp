@@ -1,9 +1,9 @@
 #include <typeinfo>
 #include "ast.hpp"
-#include "translate.hpp"
+#include "gen_tac.hpp"
 
 using namespace AST;
-using namespace gen;
+using namespace ir;
 using namespace std;
 
 

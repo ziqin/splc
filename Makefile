@@ -42,9 +42,9 @@ semantic.o: semantic.cpp semantic.hpp ast_visitor.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 # intermediate-code generation
-libgentac.a: translate.o
+libgentac.a: gen_tac.o
 	$(AR) rcs $@ $^
-translate.o: translate.cpp translate.hpp tac.hpp ast_visitor.hpp
+gen_tac.o: gen_tac.cpp gen_tac.hpp tac.hpp ast_visitor.hpp
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:

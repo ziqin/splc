@@ -5,7 +5,7 @@
 #include <memory>
 
 
-namespace gen {
+namespace ir {
 
 
 struct TacOperand {
@@ -278,6 +278,6 @@ inline std::shared_ptr<TacOperand> makeTacOp(Args... args) {
 }
 
 
-} // namespace gen
+} // namespace ir
 
 #endif // TAC_HPP

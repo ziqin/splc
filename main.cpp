@@ -5,7 +5,7 @@
 // #include "ast_dump.hpp"
 #include "parser.hpp"
 #include "semantic.hpp"
-#include "translate.hpp"
+#include "gen_tac.hpp"
 
 using namespace std;
 
@@ -63,7 +63,7 @@ int main(int argc, const char ** argv) {
     }
 
     // intermediate code generation
-    auto tacGenerator = make_unique<gen::TacGenerator>();
+    auto tacGenerator = make_unique<ir::TacGenerator>();
     ast->traverse({ tacGenerator.get() });
     ofstream fout(targetPath);
     tacGenerator->printTac(fout);
