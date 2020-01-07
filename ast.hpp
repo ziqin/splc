@@ -5,8 +5,6 @@
 #include <list>
 #include <memory>
 #include <string>
-#include <typeindex>
-#include <unordered_map>
 #include <vector>
 #include "symbol_table.hpp"
 #include "tac.hpp"

@@ -3,12 +3,15 @@
 
 #include <tuple>
 #include <vector>
+#include <unordered_map>
 #include <unordered_set>
 #include "ast.hpp"
 #include "ast_visitor.hpp"
+#include "semantic_err.hpp"
 
 namespace smt {
 
+std::vector<SemanticErrRecord> analyzeSemantic(ast::Program *ast);
 
 class ScopeSetter: public ast::Visitor {
 public:
@@ -18,37 +21,6 @@ public:
     void enter(ast::ForStmt *, ast::Node *) override;
     void enter(ast::CompoundStmt *, ast::Node *) override;
 };
-
-
-enum SemanticErr {
-    ERR_TYPE0,
-    ERR_TYPE1,
-    ERR_TYPE2,
-    ERR_TYPE3,
-    ERR_TYPE4,
-    ERR_TYPE5,
-    ERR_TYPE6,
-    ERR_TYPE7,
-    ERR_TYPE8,
-    ERR_TYPE9,
-    ERR_TYPE10,
-    ERR_TYPE11,
-    ERR_TYPE12,
-    ERR_TYPE13,
-    ERR_TYPE14,
-    ERR_TYPE15
-};
-
-struct SemanticErrRecord {
-    SemanticErr err;
-    ast::Node *cause;
-    std::string msg;
-
-    SemanticErrRecord(SemanticErr err, ast::Node *cause, std::string msg):
-        err(err), cause(cause), msg(msg) {}
-};
-
-std::vector<SemanticErrRecord> analyzeSemantic(ast::Program *ast);
 
 
 class SemanticAnalyzer: public ast::Visitor {

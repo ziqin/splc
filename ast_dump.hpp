@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include "ast.hpp"
 #include "ast_visitor.hpp"
 #include "utils.hpp"
