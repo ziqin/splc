@@ -2,7 +2,7 @@
 #include "semantic.hpp"
 #include "type.hpp"
 
-using namespace AST;
+using namespace ast;
 using namespace smt;
 using namespace std;
 

@@ -5,7 +5,7 @@
 #include "semantic.hpp"
 
 using namespace std;
-using namespace AST;
+using namespace ast;
 
 
 class FuncDefVisitor: public Visitor {

@@ -9,7 +9,7 @@
 
 namespace ir {
 
-class TacGenerator final: public AST::Visitor {
+class TacGenerator final: public ast::Visitor {
 private:
     std::list<Tac*> codes;
 public:
@@ -17,7 +17,7 @@ public:
     const std::list<Tac*>& getTac() const;
     void printTac(std::ostream& out) const;
 
-    void leave(AST::FunDef *, AST::Node *) override;
+    void leave(ast::FunDef *, ast::Node *) override;
 };
 
 } // namespace ir

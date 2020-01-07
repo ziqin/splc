@@ -8,7 +8,7 @@
 #include "utils.hpp"
 
 
-namespace AST {
+namespace ast {
 
 std::ostream& operator<<(std::ostream& out, const Location& loc) {
     return out << "@[" << loc.start.line << '.' << loc.start.column

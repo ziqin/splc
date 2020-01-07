@@ -6,7 +6,7 @@
 #include <cstdio>
 #include "ast.hpp"
 
-AST::Program * parseFile(FILE *);
-AST::Program * parseStr(const char *);
+ast::Program * parseFile(FILE *);
+ast::Program * parseStr(const char *);
 
 #endif

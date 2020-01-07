@@ -6,7 +6,7 @@
 #include "syntax.tab.h"
 #include "type.hpp"
 
-using namespace AST;
+using namespace ast;
 using namespace std;
 using namespace ir;
 

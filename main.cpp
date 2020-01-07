@@ -45,12 +45,12 @@ int main(int argc, const char ** argv) {
     }
 
     // parsing
-    unique_ptr<AST::Program> ast(parseFile(srcFile));
+    unique_ptr<ast::Program> ast(parseFile(srcFile));
     fclose(srcFile);
     if (!ast) exit(PARSING_ERR);
 
-    // // dump AST
-    // auto printer = make_unique<AST::Printer>(cout);
+    // // dump ast
+    // auto printer = make_unique<ast::Printer>(cout);
     // ast->traverse({ printer.get() });
 
     // semantic analysis

@@ -76,7 +76,7 @@ public:
     }
 };
 
-} // end of namespace AST
+} // end of namespace ast
 
 
 #endif // SYMBOL_TABLE_HPP

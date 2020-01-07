@@ -3,7 +3,7 @@
 
 #include "ast.hpp"
 
-namespace AST {
+namespace ast {
 
 /**
  * visit: active traversal
@@ -37,6 +37,6 @@ public:
     FOR_EACH_NODE(DEFINE_VISITOR_LEAVE)
 };
 
-} // namespace AST
+} // namespace ast
 
 #endif // AST_VISITOR_HPP

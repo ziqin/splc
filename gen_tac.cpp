@@ -2,7 +2,7 @@
 #include "ast.hpp"
 #include "gen_tac.hpp"
 
-using namespace AST;
+using namespace ast;
 using namespace ir;
 using namespace std;
 

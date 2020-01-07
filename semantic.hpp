@@ -10,13 +10,13 @@
 namespace smt {
 
 
-class ScopeSetter: public AST::Visitor {
+class ScopeSetter: public ast::Visitor {
 public:
-    void defaultEnter(AST::Node *, AST::Node *) override;
-    void enter(AST::Program *, AST::Node *) override;
-    void enter(AST::FunDef *, AST::Node *) override;
-    void enter(AST::ForStmt *, AST::Node *) override;
-    void enter(AST::CompoundStmt *, AST::Node *) override;
+    void defaultEnter(ast::Node *, ast::Node *) override;
+    void enter(ast::Program *, ast::Node *) override;
+    void enter(ast::FunDef *, ast::Node *) override;
+    void enter(ast::ForStmt *, ast::Node *) override;
+    void enter(ast::CompoundStmt *, ast::Node *) override;
 };
 
 
@@ -41,24 +41,24 @@ enum SemanticErr {
 
 struct SemanticErrRecord {
     SemanticErr err;
-    AST::Node *cause;
+    ast::Node *cause;
     std::string msg;
 
-    SemanticErrRecord(SemanticErr err, AST::Node *cause, std::string msg):
+    SemanticErrRecord(SemanticErr err, ast::Node *cause, std::string msg):
         err(err), cause(cause), msg(msg) {}
 };
 
-std::vector<SemanticErrRecord> analyzeSemantic(AST::Program *ast);
+std::vector<SemanticErrRecord> analyzeSemantic(ast::Program *ast);
 
 
-class SemanticAnalyzer: public AST::Visitor {
+class SemanticAnalyzer: public ast::Visitor {
 public:
     SemanticAnalyzer(std::vector<SemanticErrRecord>& errStore): errs(errStore) {}
 
 protected:
-    void report(SemanticErr errType, AST::Node *cause, const std::string& msg);
-    void report(AST::Node *cause);
-    bool hasErr(AST::Node * node) const;
+    void report(SemanticErr errType, ast::Node *cause, const std::string& msg);
+    void report(ast::Node *cause);
+    bool hasErr(ast::Node * node) const;
 
 private:
     std::vector<SemanticErrRecord>& errs;
@@ -72,9 +72,9 @@ private:
 public:
     StructInitializer(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
-    void enter(AST::StructDef *, AST::Node *) override;
-    void leave(AST::StructDef *, AST::Node *) override;
-    void enter(AST::StructSpecifier *, AST::Node *) override;
+    void enter(ast::StructDef *, ast::Node *) override;
+    void leave(ast::StructDef *, ast::Node *) override;
+    void enter(ast::StructSpecifier *, ast::Node *) override;
 };
 
 
@@ -85,15 +85,15 @@ private:
 public:
     SymbolSetter(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
-    void enter(AST::Program *, AST::Node *) override;
-    void enter(AST::ExtVarDef *, AST::Node *) override;
-    void enter(AST::ParamDec *, AST::Node *) override;
-    void enter(AST::FunDef *, AST::Node *) override;
-    void enter(AST::FunDec *, AST::Node *) override;
-    void enter(AST::Def *, AST::Node *) override;
-    void enter(AST::Dec *, AST::Node *) override;
-    void leave(AST::VarDec *, AST::Node *) override;
-    void leave(AST::ArrDec *, AST::Node *) override;
+    void enter(ast::Program *, ast::Node *) override;
+    void enter(ast::ExtVarDef *, ast::Node *) override;
+    void enter(ast::ParamDec *, ast::Node *) override;
+    void enter(ast::FunDef *, ast::Node *) override;
+    void enter(ast::FunDec *, ast::Node *) override;
+    void enter(ast::Def *, ast::Node *) override;
+    void enter(ast::Dec *, ast::Node *) override;
+    void leave(ast::VarDec *, ast::Node *) override;
+    void leave(ast::ArrDec *, ast::Node *) override;
 };
 
 
@@ -104,20 +104,20 @@ private:
 public:
     TypeSynthesizer(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
-    void leave(AST::IdExp *, AST::Node *) override;
-    void leave(AST::CallExp *, AST::Node *) override;
-    void leave(AST::AssignExp *, AST::Node *) override;
-    void leave(AST::Dec *, AST::Node *) override;
-    void leave(AST::UnaryExp *, AST::Node *) override;
-    void leave(AST::BinaryExp *, AST::Node *) override;
-    void leave(AST::MemberExp *, AST::Node *) override;
-    void leave(AST::ArrayExp *, AST::Node *) override;
-    void enter(AST::FunDef *, AST::Node *) override;
-    void enter(AST::CompoundStmt *, AST::Node *) override;
-    void enter(AST::IfStmt *, AST::Node *) override;
-    void enter(AST::WhileStmt *, AST::Node *) override;
-    void enter(AST::ForStmt *, AST::Node *) override;
-    void leave(AST::ReturnStmt *, AST::Node *) override;
+    void leave(ast::IdExp *, ast::Node *) override;
+    void leave(ast::CallExp *, ast::Node *) override;
+    void leave(ast::AssignExp *, ast::Node *) override;
+    void leave(ast::Dec *, ast::Node *) override;
+    void leave(ast::UnaryExp *, ast::Node *) override;
+    void leave(ast::BinaryExp *, ast::Node *) override;
+    void leave(ast::MemberExp *, ast::Node *) override;
+    void leave(ast::ArrayExp *, ast::Node *) override;
+    void enter(ast::FunDef *, ast::Node *) override;
+    void enter(ast::CompoundStmt *, ast::Node *) override;
+    void enter(ast::IfStmt *, ast::Node *) override;
+    void enter(ast::WhileStmt *, ast::Node *) override;
+    void enter(ast::ForStmt *, ast::Node *) override;
+    void leave(ast::ReturnStmt *, ast::Node *) override;
 };
 
 

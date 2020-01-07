@@ -4,10 +4,10 @@
 #include "parser.hpp"
 
 using namespace std;
-using namespace AST;
+using namespace ast;
 
 
-TEST_CASE("AST nodes for expressions can be constructed", "[ast-exp]") {
+TEST_CASE("ast nodes for expressions can be constructed", "[ast-exp]") {
 
     SECTION("constructing id expressions") {
         CHECK_NOTHROW(IdExp("abc_123_efg"));
@@ -63,7 +63,7 @@ Stmt * createStmt() {
     return new ExpStmt(new AssignExp(new IdExp("b"), new LiteralExp(0)));
 }
 
-TEST_CASE("AST nodes for statements can be constructed and destroyed", "[ast-stmt]") {
+TEST_CASE("ast nodes for statements can be constructed and destroyed", "[ast-stmt]") {
 
     SECTION("constructing/destroying expression statements") {
         REQUIRE_NOTHROW(ExpStmt(createExp()));
@@ -98,13 +98,13 @@ TEST_CASE("AST nodes for statements can be constructed and destroyed", "[ast-stm
 }
 
 
-TEST_CASE("AST can be constructed", "[ast-program]") {
-    SECTION("constructing an AST from a string") {
+TEST_CASE("ast can be constructed", "[ast-program]") {
+    SECTION("constructing an ast from a string") {
         const char * src =
             "int twice(int c) {"
             "  return c + c;"
             "}";
-        unique_ptr<AST::Program> ast(parseStr(src));
+        unique_ptr<ast::Program> ast(parseStr(src));
         REQUIRE(ast != nullptr);
         THEN("there is a function definition") {
             CHECK(ast->extDefs.size() == 1);

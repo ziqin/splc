@@ -16,7 +16,7 @@
 
 struct YYLTYPE;
 
-namespace AST {
+namespace ast {
 
 #define FOR_EACH_NODE(action)   \
     action(Node)                \
@@ -416,6 +416,6 @@ struct CompoundStmt final: public Stmt {
     DEFINE_VISITOR_HOOKS
 };
 
-} // namespace AST
+} // namespace ast
 
 #endif // AST_HPP

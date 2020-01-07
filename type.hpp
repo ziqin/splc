@@ -93,6 +93,6 @@ inline T& as(Shared<Type> type) {
 }
 
 
-} // end of namespace AST
+} // end of namespace ast
 
 #endif
