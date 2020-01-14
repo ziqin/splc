@@ -10,11 +10,11 @@
 
 namespace smt {
 
-enum Primitive {
-    TYPE_CHAR,
-    TYPE_INT,
-    TYPE_FLOAT,
-    TYPE_AUTO
+enum class Primitive {
+    CHAR,
+    INT,
+    FLOAT,
+    AUTO
 };
 
 struct Type {

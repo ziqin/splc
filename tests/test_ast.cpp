@@ -30,15 +30,15 @@ TEST_CASE("ast nodes for expressions can be constructed", "[ast-exp]") {
     }
 
     SECTION("constructing unary expressions") {
-        CHECK_NOTHROW(UnaryExp(Operator::OPT_PLUS, new LiteralExp(1)));
-        CHECK_NOTHROW(UnaryExp(Operator::OPT_MINUS, new LiteralExp(2)));
-        CHECK_NOTHROW(UnaryExp(Operator::OPT_NOT, new IdExp("a")));
-        CHECK_THROWS_AS(UnaryExp(Operator::OPT_AND, new IdExp("b")), invalid_argument);
+        CHECK_NOTHROW(UnaryExp(Operator::PLUS, new LiteralExp(1)));
+        CHECK_NOTHROW(UnaryExp(Operator::MINUS, new LiteralExp(2)));
+        CHECK_NOTHROW(UnaryExp(Operator::NOT, new IdExp("a")));
+        CHECK_THROWS_AS(UnaryExp(Operator::AND, new IdExp("b")), invalid_argument);
     }
 
     SECTION("constructing binary expressions") {
-        CHECK_NOTHROW(BinaryExp(new IdExp("a"), Operator::OPT_MUL, new IdExp("b")));
-        CHECK_THROWS_AS(BinaryExp(new IdExp("c"), Operator::OPT_NOT, new IdExp("d")), invalid_argument);
+        CHECK_NOTHROW(BinaryExp(new IdExp("a"), Operator::MUL, new IdExp("b")));
+        CHECK_THROWS_AS(BinaryExp(new IdExp("c"), Operator::NOT, new IdExp("d")), invalid_argument);
     }
 
     SECTION("constructing assignment expression") {

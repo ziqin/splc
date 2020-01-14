@@ -15,7 +15,6 @@ ADD_FLEX_BISON_DEPENDENCY(Lex Syntax)
 add_library(parser
         ast.cpp
         ast.hpp
-        ast_dump.hpp
         ast_visitor.hpp
         parser.hpp
         syntax_err.hpp
@@ -43,6 +42,7 @@ add_library(gentac
 
 add_executable(splc
         main.cpp
+        ast_dump.hpp
         parser.hpp
         semantic.hpp
         gen_tac.hpp)

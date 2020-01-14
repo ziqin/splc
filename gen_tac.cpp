@@ -47,13 +47,13 @@ void TacGenerator::visit(Def *self) {
 void TacGenerator::visit(LiteralExp *self) {
     shared_ptr<TacOperand> value;
     switch (smt::as<smt::PrimitiveType>(self->type).primitive) {
-    case smt::TYPE_INT:
+    case smt::Primitive::INT:
         value = makeTacOp<ConstantOperand<int>>(self->intVal);
         break;
-    case smt::TYPE_CHAR:
+    case smt::Primitive::CHAR:
         value = makeTacOp<ConstantOperand<char>>(self->charVal);
         break;
-    case smt::TYPE_FLOAT:
+    case smt::Primitive::FLOAT:
         value = makeTacOp<ConstantOperand<float>>(self->floatVal);
         break;
     default:
@@ -69,14 +69,14 @@ void TacGenerator::visit(IdExp *self) {
 
 void TacGenerator::visit(UnaryExp *self) {
     auto place = retrievePlace();
-    if (self->opt == OPT_NOT) {
+    if (self->opt == Operator::NOT) {
         translateCondExp(self, place);
     } else {
         auto tp = makeTacOp<VariableOperand>(self->scope->createPlace());
         translate(self->argument, tp);
-        if (self->opt == OPT_MINUS) {
+        if (self->opt == Operator::MINUS) {
             *this << new SubTac(place, makeTacOp<ConstantOperand<int>>(0), tp);
-        } else if (self->opt == OPT_PLUS) {
+        } else if (self->opt == Operator::PLUS) {
             *this << new AssignTac(place, tp);
         } else {
             throw runtime_error("invalid unary operator encountered");
@@ -87,14 +87,14 @@ void TacGenerator::visit(UnaryExp *self) {
 void TacGenerator::visit(BinaryExp *self) {
     auto place = retrievePlace();
     switch (self->opt) {
-    case OPT_AND:
-    case OPT_OR:
-    case OPT_LT:
-    case OPT_LE:
-    case OPT_GT:
-    case OPT_GE:
-    case OPT_NE:
-    case OPT_EQ:
+    case Operator::AND:
+    case Operator::OR:
+    case Operator::LT:
+    case Operator::LE:
+    case Operator::GT:
+    case Operator::GE:
+    case Operator::NE:
+    case Operator::EQ:
         translateCondExp(self, place);
         break;
     default: {
@@ -103,16 +103,16 @@ void TacGenerator::visit(BinaryExp *self) {
         translate(self->left, t1);
         translate(self->right, t2);
         switch (self->opt) {
-        case OPT_PLUS:
+        case Operator::PLUS:
             *this << new AddTac(place, t1, t2);
             break;
-        case OPT_MINUS:
+        case Operator::MINUS:
             *this << new SubTac(place, t1, t2);
             break;
-        case OPT_MUL:
+        case Operator::MUL:
             *this << new MulTac(place, t1, t2);
             break;
-        case OPT_DIV:
+        case Operator::DIV:
             *this << new DivTac(place, t1, t2);
             break;
         default:
@@ -231,13 +231,13 @@ void TacGenerator::translateCondExp(const Exp *exp, LabelTac *labelTrue, LabelTa
             throw invalid_argument("invalid expression"); // FIXME: memory leak
         }
         switch (binExp->opt) {
-        case OPT_AND: {
+        case Operator::AND: {
             auto label1 = new LabelTac(exp->scope->createLabel());
             translateCondExp(binExp->left, label1, labelFalse);
             *this << label1;
             translateCondExp(binExp->right, labelTrue, labelFalse);
         } break;
-        case OPT_OR: {
+        case Operator::OR: {
             auto label1 = new LabelTac(exp->scope->createLabel());
             translateCondExp(binExp->left, labelTrue, label1);
             *this << label1;
@@ -250,22 +250,22 @@ void TacGenerator::translateCondExp(const Exp *exp, LabelTac *labelTrue, LabelTa
             translate(binExp->right, t2);
             IfGotoTac *ifGotoTac;
             switch (binExp->opt) {
-            case OPT_LT:
+            case Operator::LT:
                 ifGotoTac = new IfLtGotoTac(t1, t2, labelTrue->no);
                 break;
-            case OPT_LE:
+            case Operator::LE:
                 ifGotoTac = new IfLeGotoTac(t1, t2, labelTrue->no);
                 break;
-            case OPT_GT:
+            case Operator::GT:
                 ifGotoTac = new IfGtGotoTac(t1, t2, labelTrue->no);
                 break;
-            case OPT_GE:
+            case Operator::GE:
                 ifGotoTac = new IfGeGotoTac(t1, t2, labelTrue->no);
                 break;
-            case OPT_NE:
+            case Operator::NE:
                 ifGotoTac = new IfNeGotoTac(t1, t2, labelTrue->no);
                 break;
-            case OPT_EQ:
+            case Operator::EQ:
                 ifGotoTac = new IfEqGotoTac(t1, t2, labelTrue->no);
                 break;
             default:

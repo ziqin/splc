@@ -265,20 +265,20 @@ struct MemberExp: public Exp {
     DEFINE_VISITOR_HOOKS
 };
 
-enum Operator {
-    OPT_AND,
-    OPT_OR,
-    OPT_LT,
-    OPT_LE,
-    OPT_GT,
-    OPT_GE,
-    OPT_NE,
-    OPT_EQ,
-    OPT_PLUS,
-    OPT_MINUS,
-    OPT_MUL,
-    OPT_DIV,
-    OPT_NOT
+enum class Operator {
+    AND,
+    OR,
+    LT,
+    LE,
+    GT,
+    GE,
+    NE,
+    EQ,
+    PLUS,
+    MINUS,
+    MUL,
+    DIV,
+    NOT
 };
 
 struct UnaryExp: public Exp {

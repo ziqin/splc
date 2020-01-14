@@ -8,8 +8,8 @@ using namespace smt;
 
 
 TEST_CASE("types are comparable", "[ast-type]") {
-    auto charType = makeType<PrimitiveType>(TYPE_CHAR);
-    auto intType = makeType<PrimitiveType>(TYPE_INT);
+    auto charType = makeType<PrimitiveType>(Primitive::CHAR);
+    auto intType = makeType<PrimitiveType>(Primitive::INT);
 
     SECTION("comparing primitive types") {
         CHECK(*charType != *intType);
@@ -68,8 +68,8 @@ TEST_CASE("types are comparable", "[ast-type]") {
             FunctionType procType1(nullptr, { charType, intType });
             FunctionType procType2(nullptr, { intType, charType });
             FunctionType procType3(nullptr, {
-                makeType<PrimitiveType>(TYPE_CHAR),
-                makeType<PrimitiveType>(TYPE_INT)
+                makeType<PrimitiveType>(Primitive::CHAR),
+                makeType<PrimitiveType>(Primitive::INT)
             });
             CHECK(procType1 != procType2);
             CHECK(procType1 == procType3);
@@ -86,7 +86,7 @@ TEST_CASE("types are comparable", "[ast-type]") {
 
     SECTION("comparing type alias") {
         auto charA1 = makeType<TypeAlias>("Alias1", charType);
-        auto charA2 = makeType<TypeAlias>("Alias2", makeType<PrimitiveType>(TYPE_CHAR));
+        auto charA2 = makeType<TypeAlias>("Alias2", makeType<PrimitiveType>(Primitive::CHAR));
         auto charA3 = makeType<TypeAlias>("Alias3", charA1);
         auto intAlias = makeType<TypeAlias>("IntAlias", intType);
 
@@ -101,8 +101,8 @@ TEST_CASE("types are comparable", "[ast-type]") {
 SCENARIO("types on the symbol table can be referenced", "[ast-scope]") {
 
     GIVEN("some symbol tables and types") {
-        auto intType = makeType<PrimitiveType>(TYPE_INT);
-        auto charType = makeType<PrimitiveType>(TYPE_CHAR);
+        auto intType = makeType<PrimitiveType>(Primitive::INT);
+        auto charType = makeType<PrimitiveType>(Primitive::CHAR);
 
         auto globalScope = make_shared<SymbolTable>(nullptr);
         auto funcScope = make_shared<SymbolTable>(globalScope);
@@ -130,12 +130,12 @@ SCENARIO("types on the symbol table can be referenced", "[ast-scope]") {
 
                 THEN("updated value can be retrived at any time") {
                     auto type = funcScope->getType("a").value();
-                    type.set(new PrimitiveType(TYPE_INT));
+                    type.set(new PrimitiveType(Primitive::INT));
 
                     auto hdl = blockScope->getType("b");
                     CHECK(hdl);
                     auto b = hdl.value();
-                    CHECK(as<PrimitiveType>(b).primitive == TYPE_INT);
+                    CHECK(as<PrimitiveType>(b).primitive == Primitive::INT);
                 }
             }
         }
@@ -146,8 +146,8 @@ SCENARIO("types on the symbol table can be referenced", "[ast-scope]") {
 SCENARIO("symbol table works", "[ast-scope]") {
 
     GIVEN("some symbol tables and types") {
-        auto intType = makeType<PrimitiveType>(TYPE_INT);
-        auto charType = makeType<PrimitiveType>(TYPE_CHAR);
+        auto intType = makeType<PrimitiveType>(Primitive::INT);
+        auto charType = makeType<PrimitiveType>(Primitive::CHAR);
 
         auto globalScope = make_shared<SymbolTable>(nullptr);
         auto funcScope = make_shared<SymbolTable>(globalScope);

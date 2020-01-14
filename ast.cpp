@@ -211,14 +211,14 @@ void Specifier::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 
 PrimitiveSpecifier::PrimitiveSpecifier(const string& typeName) {
     if (typeName == "char") {
-        primitive = smt::TYPE_CHAR;
-        type.set(new smt::PrimitiveType(smt::TYPE_CHAR));
+        primitive = smt::Primitive::CHAR;
+        type.set(new smt::PrimitiveType(smt::Primitive::CHAR));
     } else if (typeName == "int") {
-        primitive = smt::TYPE_INT;
-        type.set(new smt::PrimitiveType(smt::TYPE_INT));
+        primitive = smt::Primitive::INT;
+        type.set(new smt::PrimitiveType(smt::Primitive::INT));
     } else if (typeName == "float") {
-        primitive = smt::TYPE_FLOAT;
-        type.set(new smt::PrimitiveType(smt::TYPE_FLOAT));
+        primitive = smt::Primitive::FLOAT;
+        type.set(new smt::PrimitiveType(smt::Primitive::FLOAT));
     } else {
         throw invalid_argument("illegal primitive type");
     }
@@ -354,15 +354,15 @@ void Exp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 
 
 LiteralExp::LiteralExp(char val):
-    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_CHAR))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::Primitive::CHAR))),
     charVal(val) {}
 
 LiteralExp::LiteralExp(int val):
-    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_INT))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::Primitive::INT))),
     intVal(val) {}
 
 LiteralExp::LiteralExp(double val):
-    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::TYPE_FLOAT))),
+    Exp(Shared<smt::Type>(new smt::PrimitiveType(smt::Primitive::FLOAT))),
     floatVal(val) {}
 
 void LiteralExp::visit(Visitor *visitor) {
@@ -441,7 +441,7 @@ void MemberExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 UnaryExp::UnaryExp(Operator opt, Exp * argument):
     opt(opt), argument(argument)
 {
-    if (opt != OPT_MINUS && opt != OPT_NOT && opt != OPT_PLUS) {
+    if (opt != Operator::MINUS && opt != Operator::NOT && opt != Operator::PLUS) {
         delete argument;
         throw invalid_argument("illegal operator for unary expression");
     }
@@ -465,7 +465,7 @@ void UnaryExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 BinaryExp::BinaryExp(Exp * left, Operator opt, Exp * right):
     opt(opt), left(left), right(right)
 {
-    if (opt == OPT_NOT) {
+    if (opt == Operator::NOT) {
         deleteAll(this->left, this->right);
         throw invalid_argument("illegal operator for binary expression");
     }

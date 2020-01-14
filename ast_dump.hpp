@@ -54,9 +54,9 @@ public:
     void enter(PrimitiveSpecifier *self, Node *parent) override {
         auto& out = this->out(self, parent) << " type: ";
         switch (self->primitive) {
-            case smt::TYPE_CHAR: out << "char"; break;
-            case smt::TYPE_INT: out << "int"; break;
-            case smt::TYPE_FLOAT: out << "float"; break;
+            case smt::Primitive::CHAR: out << "char"; break;
+            case smt::Primitive::INT: out << "int"; break;
+            case smt::Primitive::FLOAT: out << "float"; break;
             default: out << "auto"; break;
         }
         out << std::endl;    
@@ -78,9 +78,9 @@ public:
         auto& out = this->out(self, parent) << " value: ";
         smt::Primitive primitive = dynamic_cast<const smt::PrimitiveType&>(self->type.value()).primitive;
         switch (primitive) {
-            case smt::TYPE_CHAR: out << '\'' << self->charVal << '\''; break;
-            case smt::TYPE_INT: out << self->intVal; break;
-            case smt::TYPE_FLOAT: out << self->floatVal; break;
+            case smt::Primitive::CHAR: out << '\'' << self->charVal << '\''; break;
+            case smt::Primitive::INT: out << self->intVal; break;
+            case smt::Primitive::FLOAT: out << self->floatVal; break;
             default: break;
         }
         out << std::endl;
@@ -89,9 +89,9 @@ public:
     void enter(UnaryExp *self, Node *parent) override {
         auto& out = this->out(self, parent) << " operator: ";
         switch (self->opt) {
-            case OPT_PLUS:  out << '+';     break;
-            case OPT_MINUS: out << '-';     break;
-            case OPT_NOT:   out << '!';     break;
+            case Operator::PLUS:  out << '+';     break;
+            case Operator::MINUS: out << '-';     break;
+            case Operator::NOT:   out << '!';     break;
             default:        out << "error"; break;
         }
         out << std::endl;
@@ -100,18 +100,18 @@ public:
     void enter(BinaryExp *self, Node *parent) override {
         auto& out = this->out(self, parent) << " operator: ";
         switch (self->opt) {
-            case OPT_AND:    out << "&&";    break;
-            case OPT_OR:     out << "||";    break;
-            case OPT_LT:     out << "<";     break;
-            case OPT_LE:     out << "<=";    break;
-            case OPT_GT:     out << ">";     break;
-            case OPT_GE:     out << ">=";    break;
-            case OPT_NE:     out << "!=";    break;
-            case OPT_EQ:     out << "==";    break;
-            case OPT_PLUS:   out << "+";     break;
-            case OPT_MINUS:  out << "-";     break;
-            case OPT_MUL:    out << "*";     break;
-            case OPT_DIV:    out << "/";     break;
+            case Operator::AND:    out << "&&";    break;
+            case Operator::OR:     out << "||";    break;
+            case Operator::LT:     out << "<";     break;
+            case Operator::LE:     out << "<=";    break;
+            case Operator::GT:     out << ">";     break;
+            case Operator::GE:     out << ">=";    break;
+            case Operator::NE:     out << "!=";    break;
+            case Operator::EQ:     out << "==";    break;
+            case Operator::PLUS:   out << "+";     break;
+            case Operator::MINUS:  out << "-";     break;
+            case Operator::MUL:    out << "*";     break;
+            case Operator::DIV:    out << "/";     break;
             default:    out << "error"; break;
         }
         out << std::endl;

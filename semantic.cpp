@@ -73,7 +73,7 @@ bool SemanticAnalyzer::hasErr(Node *node) const {
 void StructInitializer::enter(StructDef *self, Node *parent) {
     const string& name = self->specifier->identifier;
     if (this->structures.find(name) != this->structures.end()) {
-        this->report(ERR_TYPE15, self, "redefine the same structure type");
+        this->report(SemanticErr::TYPE15, self, "redefine the same structure type");
     } else {
         this->structures[name] = self->specifier->type;
     }
@@ -103,7 +103,7 @@ void StructInitializer::leave(StructDef *self, Node *parent) {
 void StructInitializer::enter(StructSpecifier *self, Node *parent) {
     auto typeItr = this->structures.find(self->identifier);
     if (typeItr == this->structures.end()) {
-        this->report(ERR_TYPE0, self, "struct undefined");
+        this->report(SemanticErr::TYPE0, self, "struct undefined");
     } else {
         self->type = typeItr->second;
     }
@@ -111,9 +111,9 @@ void StructInitializer::enter(StructSpecifier *self, Node *parent) {
 
 
 void SymbolSetter::enter(Program *self, Node *parent) {
-    auto readType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::TYPE_INT));
-    auto writeType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::TYPE_INT), vector<Shared<Type>>{
-        makeType<PrimitiveType>(Primitive::TYPE_INT)
+    auto readType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::INT));
+    auto writeType = makeType<FunctionType>(makeType<PrimitiveType>(Primitive::INT), vector<Shared<Type>>{
+        makeType<PrimitiveType>(Primitive::INT)
     });
     self->scope->setType("read", readType);
     self->scope->setType("write", writeType);
@@ -148,7 +148,7 @@ void SymbolSetter::enter(FunDec *self, Node *parent) {
         }
         self->scope->setType(self->identifier, Shared<Type>(type));
     } else {
-        this->report(ERR_TYPE4, self, "function `" + self->identifier +"' is redefined");
+        this->report(SemanticErr::TYPE4, self, "function `" + self->identifier +"' is redefined");
     }
 }
 
@@ -164,7 +164,7 @@ void SymbolSetter::enter(Dec *self, Node *parent) {
 
 void SymbolSetter::leave(VarDec *self, Node *parent) {
     if (!self->scope->canOverwrite(self->identifier)) {
-        this->report(ERR_TYPE3, self, "variable `" + self->identifier + "' is redefined in the same scope");
+        this->report(SemanticErr::TYPE3, self, "variable `" + self->identifier + "' is redefined in the same scope");
     }
     self->scope->setType(self->identifier, this->typeRefs[self->nodeId]);
 }
@@ -183,7 +183,7 @@ void TypeSynthesizer::leave(IdExp *self, Node *parent) {
     if (defined) {
         self->type = defined.value();
     } else {
-        this->report(ERR_TYPE1, self, "variable " + self->identifier + " is used without definition");
+        this->report(SemanticErr::TYPE1, self, "variable " + self->identifier + " is used without definition");
     }
 }
 
@@ -207,13 +207,13 @@ void TypeSynthesizer::leave(CallExp *self, Node *parent) {
             if (argMatch) {
                 self->type = funcType.returned;
             } else {
-                this->report(ERR_TYPE9, self, "the arguments of function `" + self->identifier + "' mismatch the declared parameters");
+                this->report(SemanticErr::TYPE9, self, "the arguments of function `" + self->identifier + "' mismatch the declared parameters");
             }
         } catch (const exception& e) {
-            this->report(ERR_TYPE11, self, "applying function invocation operator on non-function names");
+            this->report(SemanticErr::TYPE11, self, "applying function invocation operator on non-function names");
         }
     } else {
-        this->report(ERR_TYPE2, self, "function is invoked without definition");
+        this->report(SemanticErr::TYPE2, self, "function is invoked without definition");
     }
 }
 
@@ -226,9 +226,9 @@ void TypeSynthesizer::leave(AssignExp *self, Node *parent) {
     if (typeid(*self->left) != typeid(IdExp) &&
         typeid(*self->left) != typeid(ArrayExp) &&
         typeid(*self->left) != typeid(MemberExp)
-    )   this->report(ERR_TYPE6, self, "rvalue on the left side of assignment operator");
+    )   this->report(SemanticErr::TYPE6, self, "rvalue on the left side of assignment operator");
     if (self->left->type.value() != self->right->type.value())
-        this->report(ERR_TYPE5, self, "unmatched types on both sides of assignment operator");
+        this->report(SemanticErr::TYPE5, self, "unmatched types on both sides of assignment operator");
     self->type = self->left->type;
 }
 
@@ -240,7 +240,7 @@ void TypeSynthesizer::leave(Dec *self, Node *parent) {
     if (self->init != nullptr &&
         self->scope->getType(self->declarator->identifier).value().value() != self->init->type.value()
     ) {
-        this->report(ERR_TYPE5, self, "unmatched types on both sides of assignment operator");
+        this->report(SemanticErr::TYPE5, self, "unmatched types on both sides of assignment operator");
     }
 }
 
@@ -251,10 +251,10 @@ void TypeSynthesizer::leave(UnaryExp *self, Node *parent) {
     }
     try {
         const PrimitiveType& type = as<PrimitiveType>(self->argument->type);
-        if (type == TYPE_CHAR) this->report(ERR_TYPE7, self, "unmatched operand");
+        if (type == Primitive::CHAR) this->report(SemanticErr::TYPE7, self, "unmatched operand");
         else self->type = self->argument->type;
     } catch (const exception& e) {
-        this->report(ERR_TYPE7, self, "unmatched operand");
+        this->report(SemanticErr::TYPE7, self, "unmatched operand");
     }
 }
 
@@ -268,7 +268,7 @@ void TypeSynthesizer::leave(BinaryExp *self, Node *parent) {
         typeid(right.value()) != typeid(PrimitiveType) ||
         *left != *right
     ) {
-        this->report(ERR_TYPE7, self, "unmatched operands");
+        this->report(SemanticErr::TYPE7, self, "unmatched operands");
     } else {
         self->type = left;
     }
@@ -284,12 +284,12 @@ void TypeSynthesizer::leave(MemberExp *self, Node *parent) {
         const StructType& structType = as<StructType>(type);
         Shared<Type> fieldType = structType.getFieldType(self->member);
         if (fieldType == nullptr) {
-            this->report(ERR_TYPE14, self, "accessing an undefined structure member `" + self->member + "'");
+            this->report(SemanticErr::TYPE14, self, "accessing an undefined structure member `" + self->member + "'");
         } else {
             self->type = fieldType;
         }
     } catch (const exception& e) {
-        this->report(ERR_TYPE13, self, "accessing member of non-structure variable");
+        this->report(SemanticErr::TYPE13, self, "accessing member of non-structure variable");
     }
 }
 
@@ -301,10 +301,10 @@ void TypeSynthesizer::leave(ArrayExp *self, Node *parent) {
     const ArrayType *arrayType = dynamic_cast<const ArrayType*>(self->subject->type.get());
     const PrimitiveType *indexType = dynamic_cast<const PrimitiveType*>(self->index->type.get());
     if (arrayType == nullptr) {
-        this->report(ERR_TYPE10, self, "applying indexing operator on non-array type variables");
+        this->report(SemanticErr::TYPE10, self, "applying indexing operator on non-array type variables");
     }
-    if (indexType == nullptr || !(*indexType == TYPE_INT)) {
-        this->report(ERR_TYPE12, self, "array indexing with non-integer type expression");
+    if (indexType == nullptr || !(*indexType == Primitive::INT)) {
+        this->report(SemanticErr::TYPE12, self, "array indexing with non-integer type expression");
     } else if (arrayType != nullptr) {
         self->type = arrayType->baseType;
     }
@@ -342,6 +342,6 @@ void TypeSynthesizer::leave(ReturnStmt *self, Node *parent) {
         return;
     }
     if (this->funcReturnTypes[self->nodeId].value() != self->argument->type.value()) {
-        this->report(ERR_TYPE8, self, "the function's return type mismatches the declared type");
+        this->report(SemanticErr::TYPE8, self, "the function's return type mismatches the declared type");
     }
 }

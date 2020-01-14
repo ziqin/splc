@@ -10,23 +10,23 @@ struct Node;
 
 namespace smt {
 
-enum SemanticErr {
-    ERR_TYPE0,
-    ERR_TYPE1,
-    ERR_TYPE2,
-    ERR_TYPE3,
-    ERR_TYPE4,
-    ERR_TYPE5,
-    ERR_TYPE6,
-    ERR_TYPE7,
-    ERR_TYPE8,
-    ERR_TYPE9,
-    ERR_TYPE10,
-    ERR_TYPE11,
-    ERR_TYPE12,
-    ERR_TYPE13,
-    ERR_TYPE14,
-    ERR_TYPE15
+enum class SemanticErr {
+    TYPE0,
+    TYPE1,
+    TYPE2,
+    TYPE3,
+    TYPE4,
+    TYPE5,
+    TYPE6,
+    TYPE7,
+    TYPE8,
+    TYPE9,
+    TYPE10,
+    TYPE11,
+    TYPE12,
+    TYPE13,
+    TYPE14,
+    TYPE15
 };
 
 struct SemanticErrRecord {
@@ -42,7 +42,7 @@ struct SemanticErrRecord {
 
 
 inline std::ostream& operator<<(std::ostream& out, const smt::SemanticErrRecord& err) {
-    return out << "Error type " << err.err - smt::ERR_TYPE0
+    return out << "Error type " << int(err.err) - int(smt::SemanticErr::TYPE0)
                << " at Line " << err.cause->loc.end.line << ": " << err.msg;
 }
 

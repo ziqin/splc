@@ -5,13 +5,13 @@
 #include <memory>
 #include <string>
 #include "ast.hpp"
-#include "utils.hpp"
+#include "parser.hpp"
 #include "syntax_err.hpp"
+#include "utils.hpp"
 
 extern "C" int yylex(void);
 static void yyerror(const char *);
 static void reportSynErr(int, SyntaxErr);
-ast::Program * parseFile(FILE *);
 
 extern FILE * yyin;
 static ast::Program * program;
@@ -116,11 +116,11 @@ ExtDef:
     | Specifier ExtDecList %prec ERROR {
         $$ = new ast::ExtVarDef($1, *$2);
         delete $2;
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_SEMI);
         }
     | Specifier %prec ERROR {
         $$ = new ast::StructDef($1);
-        reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
+        reportSynErr(@$.last_line, SyntaxErr::MISSING_SEMI);
         }
     ;
 ExtDecList:
@@ -177,7 +177,7 @@ VarDec:
     | VarDec LB INT %prec ERROR {
         $$ = new ast::ArrDec(*$1, $3);
         delete $1;
-        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
+        reportSynErr(@3.last_line, SyntaxErr::MISSING_RB);
         }
     ;
 FunDec:
@@ -194,17 +194,17 @@ FunDec:
     | ID LP VarList %prec ERROR {
         $$ = new ast::FunDec(*$1, *$3);
         deleteAll($1, $3);
-        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
+        reportSynErr(@3.last_line, SyntaxErr::MISSING_RP);
         }
     | ID LP %prec ERROR {
         $$ = new ast::FunDec(*$1);
         delete $1;
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_RP);
         }
     | ID RP %prec ERROR {
         $$ = new ast::FunDec(*$1);
         delete $1;
-        reportSynErr(@2.first_line, SYNTAX_ERR_MISSING_LP);
+        reportSynErr(@2.first_line, SyntaxErr::MISSING_LP);
         }
     ;
 VarList:
@@ -243,7 +243,7 @@ StmtList:
         $3->push_front($1);
         $$ = $3;
         delete $2;
-        reportSynErr(@1.last_line, SYNTAX_ERR_DEC_STMT_ORDER);
+        reportSynErr(@1.last_line, SyntaxErr::DEC_STMT_ORDER);
         }
     ;
 Stmt:
@@ -305,11 +305,11 @@ Stmt:
         }
     | Exp %prec ERROR {
         $$ = new ast::ExpStmt($1);
-        reportSynErr(@$.last_line, SYNTAX_ERR_MISSING_SEMI);
+        reportSynErr(@$.last_line, SyntaxErr::MISSING_SEMI);
         }
     | RETURN Exp %prec ERROR {
         $$ = new ast::ReturnStmt($2);
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_SEMI);
         }
     | LEX_ERR_BLK %prec ERROR {
         $$ = new ast::ReturnStmt();
@@ -339,7 +339,7 @@ Def:
     | Specifier DecList %prec ERROR {
         $$ = new ast::Def($1, *$2);
         delete $2;
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_SEMI);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_SEMI);
         }
     ;
 DecList:
@@ -369,51 +369,51 @@ Exp:
         $$->setLocation(&@$);
         }
     | Exp AND Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_AND, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::AND, $3);
         $$->setLocation(&@$);
         }
     | Exp OR Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_OR, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::OR, $3);
         $$->setLocation(&@$);
         }
     | Exp LT Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_LT, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::LT, $3);
         $$->setLocation(&@$);
         }
     | Exp LE Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_LE, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::LE, $3);
         $$->setLocation(&@$);
         }
     | Exp GT Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_GT, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::GT, $3);
         $$->setLocation(&@$);
         }
     | Exp GE Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_GE, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::GE, $3);
         $$->setLocation(&@$);
         }
     | Exp NE Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_NE, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::NE, $3);
         $$->setLocation(&@$);
         }
     | Exp EQ Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_EQ, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::EQ, $3);
         $$->setLocation(&@$);
         }
     | Exp PLUS Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_PLUS, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::PLUS, $3);
         $$->setLocation(&@$);
         }
     | Exp MINUS Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_MINUS, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::MINUS, $3);
         $$->setLocation(&@$);
         }
     | Exp MUL Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_MUL, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::MUL, $3);
         $$->setLocation(&@$);
         }
     | Exp DIV Exp {
-        $$ = new ast::BinaryExp($1, ast::OPT_DIV, $3);
+        $$ = new ast::BinaryExp($1, ast::Operator::DIV, $3);
         $$->setLocation(&@$);
         }
     | LP Exp RP {  // FIXME: recover original structure?
@@ -421,15 +421,15 @@ Exp:
         $$->setLocation(&@$);
         }
     | PLUS Exp %prec UPLUS {
-        $$ = new ast::UnaryExp(ast::OPT_PLUS, $2);
+        $$ = new ast::UnaryExp(ast::Operator::PLUS, $2);
         $$->setLocation(&@$);
         }
     | MINUS Exp %prec UMINUS {
-        $$ = new ast::UnaryExp(ast::OPT_MINUS, $2);
+        $$ = new ast::UnaryExp(ast::Operator::MINUS, $2);
         $$->setLocation(&@$);
         }
     | NOT Exp %prec NOT {
-        $$ = new ast::UnaryExp(ast::OPT_NOT, $2);
+        $$ = new ast::UnaryExp(ast::Operator::NOT, $2);
         $$->setLocation(&@$);
         }
     | ID LP Args RP {
@@ -479,21 +479,21 @@ Exp:
         }
     | LP Exp %prec ERROR {
         $$ = $2;
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_RP);
         }
     | ID LP Args %prec ERROR {
         $$ = new ast::CallExp(*$1, *$3);
         deleteAll($1, $3);
-        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RP);
+        reportSynErr(@3.last_line, SyntaxErr::MISSING_RP);
         }
     | ID LP %prec ERROR {
         $$ = new ast::CallExp(*$1);
         delete $1;
-        reportSynErr(@2.last_line, SYNTAX_ERR_MISSING_RP);
+        reportSynErr(@2.last_line, SyntaxErr::MISSING_RP);
         }
     | Exp LB Exp %prec ERROR {
         $$ = new ast::ArrayExp($1, $3);
-        reportSynErr(@3.last_line, SYNTAX_ERR_MISSING_RB);
+        reportSynErr(@3.last_line, SyntaxErr::MISSING_RB);
         }
     ;
 
@@ -516,7 +516,7 @@ static void yyerror(const char * msg) {
 }
 
 static void reportSynErr(int lineno, SyntaxErr err) {
-    fprintf(stderr, "Error type B at Line %d: %s\n", lineno, syntaxErrMsgs[err]);
+    fprintf(stderr, "Error type B at Line %d: %s\n", lineno, syntaxErrMsgs[int(err)]);
     hasErr = true;
 }
 
