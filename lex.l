@@ -3,7 +3,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include "ast.hpp"
-#include "syntax.tab.h"
+#include "syntax.hpp"
 
 static int yycolno = 1;
 static int prev_state;
@@ -22,6 +22,7 @@ extern "C" int yylex(void);
 
 %}
 
+%option noyywrap
 %option yylineno
 %x BLK_COMMENT
 

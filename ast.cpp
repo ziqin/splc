@@ -3,7 +3,7 @@
 #include <typeinfo>
 #include "ast.hpp"
 #include "ast_visitor.hpp"
-#include "syntax.tab.h"
+#include "syntax.hpp"
 #include "type.hpp"
 
 using namespace ast;
