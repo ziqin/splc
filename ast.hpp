@@ -16,7 +16,7 @@ struct YYLTYPE;
 
 namespace ast {
 
-#define FOR_EACH_NODE(action)   \
+#define FOR_ALL_AST_NODES(action)   \
     action(Node)                \
     action(Program)             \
     action(VarDec)              \
@@ -53,7 +53,7 @@ namespace ast {
 class Visitor;
 
 #define DECLARE_STRUCT(T) struct T;
-FOR_EACH_NODE(DECLARE_STRUCT)
+FOR_ALL_AST_NODES(DECLARE_STRUCT)
 
 struct Location {
     struct Position {
