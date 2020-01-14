@@ -8,12 +8,18 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+    - name: Checkout submodules
+      shell: bash
+      run: |
+        auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+        git submodule sync --recursive
+        git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
     - name: Install dependencies
-      run: sudo apt-get install bison cmake catch2 flex
+      run: sudo apt-get install bison cmake flex
     - name: Build
       run: mkdir build && cd build && cmake .. && make splc -j2
-    # - name: Unit Tests
-    #   run: make unit-test
+    - name: Unit Tests
+      run: cd build && make tests && ./tests/tests
     # - name: Diff Tests
     #   run: make diff-test

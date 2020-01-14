@@ -56,12 +56,14 @@ dkms.conf
 
 # CMake
 build/
+out/
 cmake-build-*/
 
 # IDEs / editors
 .idea/
 .vs/
 .vscode/
+CMakeSettings.json
 
 # Program outputs
 *.out

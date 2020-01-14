@@ -4,7 +4,7 @@ project(splc-tests LANGUAGES CXX VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-find_package(Catch2 REQUIRED)
+add_subdirectory(Catch2)
 
 add_executable(tests
         test_ast.cpp

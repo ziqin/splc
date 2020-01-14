@@ -6,6 +6,7 @@ Sustech Programming Language Compiler
 
 ## Build Dependencies
 
+- Build System: [CMake 3](https://cmake.org)
 - Lexer: [Flex](https://github.com/westes/flex)
 - Parser generator: [Bison](https://www.gnu.org/software/bison/)
 
@@ -14,8 +15,12 @@ Sustech Programming Language Compiler
 ``` sh
 git clone https://github.com/ziqin/splc.git
 cd splc/
-make
-./bin/splc ./test/test_1_r01.spl
+git submodule init
+mkdir build
+cd build
+cmake ..
+make splc
+./splc ../test/test_1_r01.spl
 ```
 
 ## References for Development
