@@ -5,6 +5,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "symbol_table.hpp"
 #include "tac.hpp"
@@ -60,10 +61,7 @@ struct Location {
         int line, column;
     } start, end;
 
-    Location() {
-        start.line = end.line = 0;
-        start.column = end.column = 0;
-    }
+    Location(): start { .line = 0, .column = 0 }, end {.line = 0, .column = 0} {}
 };
 
 #define DEFINE_VISITOR_HOOKS                                                        \
@@ -85,8 +83,8 @@ struct Node {
 struct Program final: public Node {
     std::vector<ExtDef*> extDefs;
 
-    Program(const std::list<ExtDef*>& extDefList);
-    ~Program();
+    explicit Program(const std::list<ExtDef*>& extDefList);
+    ~Program() override;
     void traverse(std::initializer_list<Visitor*> visitors);
 
     DEFINE_VISITOR_HOOKS
@@ -98,8 +96,8 @@ struct Program final: public Node {
 struct VarDec: public Node {
     std::string identifier;
 
-    VarDec(const std::string& identifier): identifier(identifier) {}
-    virtual ~VarDec() = default;
+    explicit VarDec(std::string identifier): identifier(std::move(identifier)) {}
+    ~VarDec() override = default;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -116,8 +114,8 @@ struct Dec final: public Node {
     VarDec * declarator;
     Exp * init;
 
-    Dec(VarDec * declarator, Exp * init = nullptr);
-    ~Dec();
+    explicit Dec(VarDec * declarator, Exp * init = nullptr);
+    ~Dec() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -127,7 +125,7 @@ struct Def: public Node {
     std::vector<Dec*> declarations;
 
     Def(Specifier * specifier, const std::list<Dec*>& decList);
-    ~Def();
+    ~Def() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -137,7 +135,7 @@ struct ParamDec: public Node {
     VarDec * declarator;
 
     ParamDec(Specifier * specifier, VarDec * declarator);
-    ~ParamDec();
+    ~ParamDec() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -146,8 +144,8 @@ struct FunDec: public Node {
     std::string identifier;
     std::vector<ParamDec*> parameters;
 
-    FunDec(const std::string& identifier, const std::list<ParamDec*>& varList = {});
-    ~FunDec();
+    explicit FunDec(std::string identifier, const std::list<ParamDec*>& varList = {});
+    ~FunDec() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -161,7 +159,7 @@ struct Specifier: public Node {
 struct PrimitiveSpecifier final: public Specifier {
     smt::Primitive primitive;
 
-    PrimitiveSpecifier(const std::string& typeName);
+    explicit PrimitiveSpecifier(const std::string& typeName);
 
     DEFINE_VISITOR_HOOKS
 };
@@ -170,8 +168,8 @@ struct StructSpecifier final: public Specifier {
     std::string identifier;
     std::vector<Def*> definitions;
 
-    StructSpecifier(const std::string& identifier, const std::list<Def*>& defList = {});
-    ~StructSpecifier();
+    explicit StructSpecifier(std::string identifier, const std::list<Def*>& defList = {});
+    ~StructSpecifier() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -185,7 +183,7 @@ struct ExtVarDef final: public ExtDef {
     std::vector<VarDec*> varDecs;
 
     ExtVarDef(Specifier *specifier, const std::list<VarDec*>& extDecList);
-    ~ExtVarDef();
+    ~ExtVarDef() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -193,8 +191,8 @@ struct ExtVarDef final: public ExtDef {
 struct StructDef final: public ExtDef {
     StructSpecifier *specifier;
 
-    StructDef(Specifier *specifier);
-    ~StructDef();
+    explicit StructDef(Specifier *specifier);
+    ~StructDef() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -205,7 +203,7 @@ struct FunDef final: public ExtDef {
     CompoundStmt *body;
 
     FunDef(Specifier *specifier, FunDec *declarator, CompoundStmt *body);
-    ~FunDef();
+    ~FunDef() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -215,9 +213,9 @@ struct FunDef final: public ExtDef {
 struct Exp: public Node {
     Shared<smt::Type> type;
 
-    Exp() {}
-    Exp(Shared<smt::Type> type): type(type) {}
-    virtual ~Exp() = default;
+    Exp() = default;
+    explicit Exp(Shared<smt::Type> type): type(std::move(type)) {}
+    ~Exp() override = default;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -230,9 +228,9 @@ struct LiteralExp final: public Exp {
         double floatVal;
     };
 
-    LiteralExp(char);
-    LiteralExp(int);
-    LiteralExp(double);
+    explicit LiteralExp(char);
+    explicit LiteralExp(int);
+    explicit LiteralExp(double);
 
     DEFINE_VISITOR_HOOKS
 };
@@ -241,16 +239,16 @@ struct LiteralExp final: public Exp {
 struct IdExp final: public Exp {
     std::string identifier;
 
-    IdExp(const std::string&);
+    explicit IdExp(const std::string&);
 
     DEFINE_VISITOR_HOOKS
 };
 
 struct ArrayExp: public Exp {
-    Exp * subject, * index;
+    Exp *subject, *index;
 
-    ArrayExp(Exp * subject, Exp * index);
-    ~ArrayExp();
+    ArrayExp(Exp *subject, Exp *index);
+    ~ArrayExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -259,8 +257,8 @@ struct MemberExp: public Exp {
     Exp * subject;
     std::string member;
 
-    MemberExp(Exp * subject, const std::string& member);
-    ~MemberExp();
+    MemberExp(Exp *subject, std::string member);
+    ~MemberExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -286,7 +284,7 @@ struct UnaryExp: public Exp {
     Exp *argument;
 
     UnaryExp(Operator opt, Exp *argument);
-    ~UnaryExp();
+    ~UnaryExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -296,7 +294,7 @@ struct BinaryExp: public Exp {
     Exp *left, *right;
 
     BinaryExp(Exp *left, Operator opt, Exp *right);
-    ~BinaryExp();
+    ~BinaryExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -305,7 +303,7 @@ struct AssignExp: public Exp {
     Exp *left, *right;
 
     AssignExp(Exp *left, Exp *right);
-    ~AssignExp();
+    ~AssignExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -314,8 +312,8 @@ struct CallExp: public Exp {
     std::string identifier;
     std::vector<Exp*> arguments;
 
-    CallExp(const std::string& identifier, const std::list<Exp*>& arguments = {});
-    ~CallExp();
+    explicit CallExp(std::string identifier, const std::list<Exp*>& arguments = {});
+    ~CallExp() override;
 
     DEFINE_VISITOR_HOOKS
 };
@@ -330,8 +328,8 @@ struct Stmt: public Node {
 struct ExpStmt final: public Stmt {
     Exp *expression;
 
-    ExpStmt(Exp *expression);
-    ~ExpStmt() {
+    explicit ExpStmt(Exp *expression);
+    ~ExpStmt() override {
         delete expression;
     }
 
@@ -341,8 +339,8 @@ struct ExpStmt final: public Stmt {
 struct ReturnStmt final: public Stmt {
     Exp *argument;
 
-    ReturnStmt(Exp *argument = nullptr): argument(argument) {}
-    ~ReturnStmt() {
+    explicit ReturnStmt(Exp *argument = nullptr): argument(argument) {}
+    ~ReturnStmt() override {
         delete argument;
     }
 
@@ -383,7 +381,7 @@ struct CompoundStmt final: public Stmt {
     CompoundStmt(const std::list<Def*>& defList, const std::list<Stmt*>& stmtList):
         definitions(defList.begin(), defList.end()),
         body(stmtList.begin(), stmtList.end()) {}
-    ~CompoundStmt() {
+    ~CompoundStmt() override {
         for (auto def: definitions) delete def;
         for (auto stmt: body) delete stmt;
     }

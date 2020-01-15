@@ -93,7 +93,7 @@ void StructInitializer::leave(StructDef *self, Node *parent) {
                         fieldType = makeType<ArrayType>(fieldType, *dim);
                     }
                 }
-                structType->fields.push_back(make_pair(fieldType, dec->declarator->identifier));
+                structType->fields.emplace_back(fieldType, dec->declarator->identifier);
             }
         }
         type.set(structType);
@@ -135,7 +135,7 @@ void SymbolSetter::enter(FunDef *self, Node *parent) {
 
 void SymbolSetter::enter(FunDec *self, Node *parent) {
     if (self->scope->canOverwrite(self->identifier)) {
-        FunctionType *type = new FunctionType(this->typeRefs[self->nodeId]);
+        auto *type = new FunctionType(this->typeRefs[self->nodeId]);
         for (ParamDec *para: self->parameters) {
             Shared<Type> paraType = para->specifier->type;
             auto arrPara = dynamic_cast<const ArrDec*>(para->declarator);
@@ -298,8 +298,8 @@ void TypeSynthesizer::leave(ArrayExp *self, Node *parent) {
         this->report(self);
         return;
     }
-    const ArrayType *arrayType = dynamic_cast<const ArrayType*>(self->subject->type.get());
-    const PrimitiveType *indexType = dynamic_cast<const PrimitiveType*>(self->index->type.get());
+    const auto *arrayType = dynamic_cast<const ArrayType*>(self->subject->type.get());
+    const auto *indexType = dynamic_cast<const PrimitiveType*>(self->index->type.get());
     if (arrayType == nullptr) {
         this->report(SemanticErr::TYPE10, self, "applying indexing operator on non-array type variables");
     }

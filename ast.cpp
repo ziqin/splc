@@ -1,6 +1,7 @@
 #include <cctype>
 #include <exception>
 #include <typeinfo>
+#include <utility>
 #include "ast.hpp"
 #include "ast_visitor.hpp"
 #include "syntax.hpp"
@@ -175,8 +176,8 @@ void ParamDec::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 }
 
 
-FunDec::FunDec(const string& identifier, const list<ParamDec*>& varList):
-    identifier(identifier), parameters(varList.begin(), varList.end())
+FunDec::FunDec(string identifier, const list<ParamDec*>& varList):
+    identifier(std::move(identifier)), parameters(varList.begin(), varList.end())
 {
     if (hasNull(this->parameters)) {
         deleteAll(this->parameters);
@@ -234,8 +235,8 @@ void PrimitiveSpecifier::traverse(initializer_list<Visitor*> visitors, Node *par
 }
 
 
-StructSpecifier::StructSpecifier(const string& identifier, const list<Def*>& defList):
-    identifier(identifier), definitions(defList.begin(), defList.end())
+StructSpecifier::StructSpecifier(string identifier, const list<Def*>& defList):
+    identifier(std::move(identifier)), definitions(defList.begin(), defList.end())
 {
     if (hasNull(this->definitions)) {
         deleteAll(this->definitions);
@@ -417,10 +418,10 @@ void ArrayExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 }
 
 
-MemberExp::MemberExp(Exp * subject, const string& member):
-    subject(subject), member(member)
+MemberExp::MemberExp(Exp *subject, string member):
+    subject(subject), member(std::move(member))
 {
-    if (this->subject == nullptr) throw invalid_argument("subject cannot be null");
+    if (subject == nullptr) throw invalid_argument("subject cannot be null");
 }
 
 MemberExp::~MemberExp() {
@@ -510,8 +511,8 @@ void AssignExp::traverse(initializer_list<Visitor*> visitors, Node *parent) {
 }
 
 
-CallExp::CallExp(const string& identifier, const list<Exp*>& arguments):
-    identifier(identifier), arguments(arguments.begin(), arguments.end())
+CallExp::CallExp(string identifier, const list<Exp*>& arguments):
+    identifier(std::move(identifier)), arguments(arguments.begin(), arguments.end())
 {
     if (hasNull(this->arguments)) {
         deleteAll(this->arguments);

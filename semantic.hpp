@@ -25,7 +25,7 @@ public:
 
 class SemanticAnalyzer: public ast::Visitor {
 public:
-    SemanticAnalyzer(std::vector<SemanticErrRecord>& errStore): errs(errStore) {}
+    explicit SemanticAnalyzer(std::vector<SemanticErrRecord>& errStore): errs(errStore) {}
 
 protected:
     void report(SemanticErr errType, ast::Node *cause, const std::string& msg);
@@ -42,7 +42,7 @@ class StructInitializer final: public SemanticAnalyzer {
 private:
     std::unordered_map<std::string, Shared<Type>> structures;
 public:
-    StructInitializer(std::vector<SemanticErrRecord>& errStore):
+    explicit StructInitializer(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
     void enter(ast::StructDef *, ast::Node *) override;
     void leave(ast::StructDef *, ast::Node *) override;
@@ -55,7 +55,7 @@ class SymbolSetter final: public SemanticAnalyzer {
 private:
     std::unordered_map<unsigned, Shared<Type>> typeRefs;
 public:
-    SymbolSetter(std::vector<SemanticErrRecord>& errStore):
+    explicit SymbolSetter(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
     void enter(ast::Program *, ast::Node *) override;
     void enter(ast::ExtVarDef *, ast::Node *) override;
@@ -74,7 +74,7 @@ class TypeSynthesizer final: public SemanticAnalyzer {
 private:
     std::unordered_map<unsigned, Shared<Type>> funcReturnTypes;
 public:
-    TypeSynthesizer(std::vector<SemanticErrRecord>& errStore):
+    explicit TypeSynthesizer(std::vector<SemanticErrRecord>& errStore):
         SemanticAnalyzer(errStore) {}
     void leave(ast::IdExp *, ast::Node *) override;
     void leave(ast::CallExp *, ast::Node *) override;

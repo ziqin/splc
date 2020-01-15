@@ -33,7 +33,7 @@ private:
     }
 
     void translate(ast::Exp *node, std::shared_ptr<TacOperand> place) {
-        places.push(place);
+        places.emplace(std::move(place));
         node->visit(this);
     }
 
@@ -41,8 +41,8 @@ private:
     void translateCondExp(const ast::Exp *exp, std::shared_ptr<TacOperand> place);
 
 public:
-    TacGenerator(ast::Program *ast);
-    ~TacGenerator();
+    explicit TacGenerator(ast::Program *ast);
+    ~TacGenerator() override;
 
     const std::list<Tac*>& getTac() const;
 

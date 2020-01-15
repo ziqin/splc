@@ -45,8 +45,8 @@ TEST_CASE("findNull() and deleteAll() can handle single, multiple, and STL conta
 
     SECTION("checking mixed situation") {
         vector<char*> ptrs { new char, new char };
-        int * p0 = nullptr;
-        double * p1 = new double;
+        int *p0 = nullptr;
+        double *p1 = new double;
         CHECK(hasNull(p1, ptrs, p0));
         CHECK_FALSE(hasNull(p1, ptrs));
 

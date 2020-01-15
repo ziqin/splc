@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <string>
+#include <utility>
 
 namespace ast {
 struct Node;
@@ -35,7 +36,7 @@ struct SemanticErrRecord {
     std::string msg;
 
     SemanticErrRecord(SemanticErr err, ast::Node *cause, std::string msg):
-        err(err), cause(cause), msg(msg) {}
+        err(err), cause(cause), msg(std::move(msg)) {}
 };
 
 } // namespace smt

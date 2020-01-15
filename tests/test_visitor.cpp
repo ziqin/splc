@@ -2,7 +2,6 @@
 #include <memory>
 #include "ast.hpp"
 #include "ast_visitor.hpp"
-#include "semantic.hpp"
 
 using namespace std;
 using namespace ast;
@@ -10,12 +9,12 @@ using namespace ast;
 
 class FuncDefVisitor: public Visitor {
 public:
-    void enter(FunDef *self, Node *parent) {
+    void enter(FunDef *self, Node *parent) override {
         CHECK(self->declarator->identifier == "foo");
     }
 
-    void leave(CompoundStmt *self, Node *parent) {
-        CHECK(self->definitions.size() == 0);
+    void leave(CompoundStmt *self, Node *parent) override {
+        CHECK(self->definitions.empty());
     }
 };
 

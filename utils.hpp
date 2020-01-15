@@ -17,7 +17,7 @@ public:
         info = new Info { .count = 1, .val = nullptr };
     }
 
-    explicit Shared(T * value) {
+    explicit Shared(T *value) {
         info = new Info { .count = 1, .val = value };
     }
 
@@ -29,8 +29,12 @@ public:
         info->count++;
     }
 
+    Shared(Shared&& another) noexcept: info(another.info) {
+        another.info = nullptr;
+    }
+
     ~Shared() {
-        if (--(info->count) == 0) {
+        if (info != nullptr && --(info->count) == 0) {
             delete info->val;
             delete info;
         }
@@ -43,6 +47,12 @@ public:
         }
         info = another.info;
         info->count++;
+        return *this;
+    }
+
+    Shared& operator=(Shared&& another) noexcept {
+        info = another.info;
+        another.info = nullptr;
         return *this;
     }
 

@@ -108,7 +108,7 @@ TEST_CASE("ast can be constructed", "[ast-program]") {
         REQUIRE(ast != nullptr);
         THEN("there is a function definition") {
             CHECK(ast->extDefs.size() == 1);
-            const FunDef * func = dynamic_cast<const FunDef*>(ast->extDefs[0]);
+            const auto * func = dynamic_cast<const FunDef*>(ast->extDefs[0]);
             CHECK(func != nullptr);
         }
     }

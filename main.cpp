@@ -55,7 +55,7 @@ int main(int argc, const char ** argv) {
 
     // semantic analysis
     auto semanticErrs = smt::analyzeSemantic(ast.get());
-    if (semanticErrs.size() > 0) {
+    if (!semanticErrs.empty()) {
         for (auto& semanticErr: semanticErrs) {
             cerr << semanticErr << std::endl;
         }

@@ -48,7 +48,7 @@ Shared<Type> StructType::getFieldType(const std::string& name) const {
         if (field.second == name)
             return field.first;
     }
-    return nullptr;
+    return Shared<Type>(nullptr);
 }
 
 bool FunctionType::operator==(const FunctionType& other) const {

@@ -8,8 +8,8 @@ using namespace std;
 
 
 TacGenerator::TacGenerator(ast::Program *ast) {
-    for (auto def: ast->extDefs) {
-        auto funcDef = dynamic_cast<ast::FunDef*>(def);
+    for (auto definition: ast->extDefs) {
+        auto funcDef = dynamic_cast<ast::FunDef*>(definition);
         if (funcDef == nullptr) continue;
         funcDef->visit(this);
     }
@@ -189,12 +189,11 @@ void TacGenerator::visit(IfStmt *self) {
     self->consequent->visit(this);
     if (self->alternate != nullptr) {
         label3 = new LabelTac(self->scope->createLabel());
-        *this << new GotoTac(label3->no);
-    }
-    *this << label2;
-    if (self->alternate != nullptr) {
+        *this << new GotoTac(label3->no) << label2;
         self->alternate->visit(this);
         *this << label3;
+    } else {
+        *this << label2;
     }
 }
 
@@ -226,7 +225,7 @@ void TacGenerator::translateCondExp(const Exp *exp, LabelTac *labelTrue, LabelTa
     if (typeid(*exp) == typeid(UnaryExp)) {
         translateCondExp(exp, labelFalse, labelTrue);
     } else {
-        const BinaryExp *binExp = dynamic_cast<const BinaryExp*>(exp);
+        const auto *binExp = dynamic_cast<const BinaryExp*>(exp);
         if (binExp == nullptr) {
             throw invalid_argument("invalid expression"); // FIXME: memory leak
         }

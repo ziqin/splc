@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include <typeinfo>
+#include <utility>
 #include "type.hpp"
 #include "utils.hpp"
 
@@ -33,11 +34,11 @@ private:
     }
 
 public:
-    SymbolTable() {}
-    SymbolTable(std::shared_ptr<SymbolTable> parent):
-        parent(parent) {}
+    SymbolTable() = default;
+    explicit SymbolTable(std::shared_ptr<SymbolTable> parent):
+        parent(std::move(parent)) {}
 
-    void setType(const std::string& identifier, Shared<Type> type) {
+    void setType(const std::string& identifier, const Shared<Type>& type) {
         table[identifier] = Symbol { type, 0 };
     }
 
@@ -53,11 +54,11 @@ public:
         return symbol.symbolId > 0 ? symbol.symbolId : (symbol.symbolId = ++globalSymbolSeq);
     }
 
-    int createPlace() {
+    static int createPlace() {
         return ++globalSymbolSeq;
     }
 
-    int createLabel() {
+    static int createLabel() {
         return ++globalLabelSeq;
     }
 
@@ -65,7 +66,7 @@ public:
         return table.size() + (parent == nullptr ? 0 : parent->size());
     }
 
-    bool isLowerThan(std::shared_ptr<SymbolTable> scope) const {
+    bool isLowerThan(const std::shared_ptr<SymbolTable>& scope) const {
         if (scope.get() == this) return true;
         if (parent != nullptr) return parent->isLowerThan(scope);
         return false;

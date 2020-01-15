@@ -13,9 +13,8 @@ Sustech Programming Language Compiler
 ## Try It
 
 ``` sh
-git clone https://github.com/ziqin/splc.git
+git clone --recurse-submodules https://github.com/ziqin/splc.git
 cd splc/
-git submodule init
 mkdir build
 cd build
 cmake ..
