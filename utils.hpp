@@ -41,12 +41,14 @@ public:
     }
 
     Shared& operator=(const Shared& another) {
-        if (--(info->count) == 0) {
-            delete info->val;
-            delete info;
+        if (this != &another) {
+            if (--(info->count) == 0) {
+                delete info->val;
+                delete info;
+            }
+            info = another.info;
+            info->count++;
         }
-        info = another.info;
-        info->count++;
         return *this;
     }
 
