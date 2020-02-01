@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "ast.hpp"
-#include "ast_visitor.hpp"
 #include "semantic_err.hpp"
 
 namespace smt {

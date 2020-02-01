@@ -90,7 +90,7 @@ inline Shared<Type> makeType(Args... args) {
 
 template<typename T, typename std::enable_if<std::is_base_of<Type, T>::value>::type* = nullptr>
 inline T& as(Shared<Type> type) {
-    return dynamic_cast<T&>(type.value());
+    return dynamic_cast<T&>(*type);
 }
 
 

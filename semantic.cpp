@@ -227,7 +227,7 @@ void TypeSynthesizer::leave(AssignExp *self, Node *parent) {
         typeid(*self->left) != typeid(ArrayExp) &&
         typeid(*self->left) != typeid(MemberExp)
     )   this->report(SemanticErr::TYPE6, self, "rvalue on the left side of assignment operator");
-    if (self->left->type.value() != self->right->type.value())
+    if (*self->left->type != *self->right->type)
         this->report(SemanticErr::TYPE5, self, "unmatched types on both sides of assignment operator");
     self->type = self->left->type;
 }
@@ -238,7 +238,7 @@ void TypeSynthesizer::leave(Dec *self, Node *parent) {
         return;
     }
     if (self->init != nullptr &&
-        self->scope->getType(self->declarator->identifier).value().value() != self->init->type.value()
+        *(self->scope->getType(self->declarator->identifier).value()) != *self->init->type
     ) {
         this->report(SemanticErr::TYPE5, self, "unmatched types on both sides of assignment operator");
     }
@@ -341,7 +341,7 @@ void TypeSynthesizer::leave(ReturnStmt *self, Node *parent) {
         this->report(self);
         return;
     }
-    if (this->funcReturnTypes[self->nodeId].value() != self->argument->type.value()) {
+    if (*this->funcReturnTypes[self->nodeId] != *self->argument->type) {
         this->report(SemanticErr::TYPE8, self, "the function's return type mismatches the declared type");
     }
 }

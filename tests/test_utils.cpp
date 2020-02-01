@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
 #include <vector>
 #include <list>
+#include "catch.hpp"
 #include "utils.hpp"
 
 using namespace std;
@@ -78,7 +78,7 @@ SCENARIO("share data using Shared", "[Shared]") {
 
         /* WHEN("setting a value") */ {
             s2.set(new MemFlag);
-            CHECK(s2.value().cnt == 1);
+            CHECK(s2->cnt == 1);
             CHECK(s1.get() == s2.get());
 
             {

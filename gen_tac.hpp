@@ -6,7 +6,7 @@
 #include <ostream>
 #include <stack>
 #include "tac.hpp"
-#include "ast_visitor.hpp"
+#include "ast.hpp"
 
 
 namespace ir {

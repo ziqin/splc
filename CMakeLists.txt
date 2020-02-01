@@ -3,6 +3,7 @@ project(splc LANGUAGES CXX VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+#set(CMAKE_CXX_FLAGS "--coverage")
 
 include_directories(. ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -15,7 +16,6 @@ ADD_FLEX_BISON_DEPENDENCY(Lex Syntax)
 add_library(parser
         ast.cpp
         ast.hpp
-        ast_visitor.hpp
         parser.hpp
         syntax_err.hpp
         utils.hpp
@@ -24,7 +24,6 @@ add_library(parser
 
 add_library(semantic
         ast.hpp
-        ast_visitor.hpp
         semantic.cpp
         semantic.hpp
         semantic_err.hpp
@@ -35,7 +34,6 @@ add_library(semantic
 
 add_library(gentac
         ast.hpp
-        ast_visitor.hpp
         gen_tac.cpp
         gen_tac.hpp
         tac.hpp)

@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
 #include <memory>
 #include "ast.hpp"
+#include "catch.hpp"
 #include "parser.hpp"
 
 using namespace std;

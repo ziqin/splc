@@ -1,5 +1,5 @@
-#include <catch2/catch.hpp>
 #include <memory>
+#include "catch.hpp"
 #include "symbol_table.hpp"
 #include "type.hpp"
 

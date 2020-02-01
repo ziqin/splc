@@ -5,7 +5,6 @@
 #include <string>
 #include <unordered_map>
 #include "ast.hpp"
-#include "ast_visitor.hpp"
 #include "utils.hpp"
 
 
@@ -31,7 +30,7 @@ private:
     }
 
 public:
-    Printer(std::ostream& outStream): outStream(outStream) {}
+    explicit Printer(std::ostream& outStream): outStream(outStream) {}
 
     void enter(Program *self, Node *parent) override {
         out(self, parent) << std::endl;
@@ -76,7 +75,7 @@ public:
 
     void enter(LiteralExp *self, Node *parent) override {
         auto& out = this->out(self, parent) << " value: ";
-        smt::Primitive primitive = dynamic_cast<const smt::PrimitiveType&>(self->type.value()).primitive;
+        smt::Primitive primitive = dynamic_cast<const smt::PrimitiveType&>(*self->type).primitive;
         switch (primitive) {
             case smt::Primitive::CHAR: out << '\'' << self->charVal << '\''; break;
             case smt::Primitive::INT: out << self->intVal; break;

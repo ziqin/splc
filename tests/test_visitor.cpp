@@ -1,7 +1,6 @@
-#include <catch2/catch.hpp>
 #include <memory>
 #include "ast.hpp"
-#include "ast_visitor.hpp"
+#include "catch.hpp"
 
 using namespace std;
 using namespace ast;

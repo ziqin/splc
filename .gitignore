@@ -55,9 +55,8 @@ Mkfile.old
 dkms.conf
 
 # CMake
-build/
 out/
-cmake-build-*/
+cmake-build*/
 
 # IDEs / editors
 .idea/

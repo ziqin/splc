@@ -3,7 +3,6 @@
 #include <typeinfo>
 #include <utility>
 #include "ast.hpp"
-#include "ast_visitor.hpp"
 #include "syntax.hpp"
 #include "type.hpp"
 
